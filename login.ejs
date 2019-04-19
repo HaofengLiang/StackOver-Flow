@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Course Project API -- Login Form </title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!---- template CSS/Javascript/Jquery ------->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script>
+
+  <!---- Customize CSS/Javascript/Jquery----------->
+   <link rel="stylesheet" type="text/css" href="/css/basic.css" >
+</head>
+<body>
+​
+<div class="container">
+  <h2>API Login</h2><br>
+  <div>
+  <form id="login">
+  	<div class="form-group">
+      <label for="username">Username:</label>
+      <input type="text" class="form-control" id="username" placeholder="Enter User Name" name="username" required>
+    </div>
+    <div class="form-group">
+      <label for="password">Password:</label>
+      <input type="password" class="form-control" id="password" placeholder="Enter password" name="password" required>
+    </div>
+    <button type="submit" class="btn btn-primary" style="margin-left: 40%"> Log In </button>
+  </form>
+  <br><br>
+</div>
+
+  <div>
+     <form id="adduser" method="get" action="/adduser">
+      <h4> Withoud any Accounts? You can create one new account here by clicking the button below ---> 
+      <button class="btn btn-success btn" type="submit">Create A New User</button></h4>
+    </form>
+  </div>
+  
+</div>
+
+<script type="text/javascript">
+   $("#login").submit(function(event){
+        event.preventDefault();
+      // Ajax Post Call
+      $.ajax({
+        type: 'POST',
+        url: '/login',
+        dataType: 'json',
+        data: JSON.stringify({
+           username: $("#username").val(),
+           password: $("#password").val()
+        }),
+        contentType: 'application/json',
+        success: function (res) {
+          if(res.status == 'OK'){
+             window.location.href = 'http://64.190.205.52/questions';
+            // window.location.href = 'http://localhost:3000/questions';
+          }else if(res.status == 'error'){
+             console.log("/login-->post: %s", res.error)
+          }
+        },
+        error: function (res) {
+          console.log('Ajax call fails in /login-->post %s\n', JOSN.stringify(res));
+        }
+      });
+   });
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Stackover flow clone --  Media Management </title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!---- template CSS/Javascript/Jquery ------->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script>
+
+  <!---- Customize CSS/Javascript/Jquery----------->
+   <link rel="stylesheet" type="text/css" href="/css/basic.css" >
+</head>
+<body>
+​
+<div class="container">
+  <h2>Media Management</h2><br>
+  <div>
+  <form id='addMedia' enctype="multipart/form-data" method="POST" action="/addmedia">
+  	<div class="form-group">
+      <label for="content">Media:</label>
+      <input type="file" class="form-control" id="content" placeholder="Upload a media file" name="content">
+    </div>
+
+    <button type="submit" class="btn btn-success"  id='upload' style="margin-left: 40%"> Upload Media </button>
+  </form>
+</div>
+<br>
+  <div>
+  <form id='getMedia'>
+    <div class="form-group">
+      <label for="media_id">Media ID:</label>
+      <input type="text" class="form-control" id="media_id" placeholder="Type media's ID" name="media_id" required>
+    </div>
+    <button type="submit" class="btn btn-success" style="margin-left: 40%"> Get Media </button>
+  </form>
+</div>
+  
+</div>
+
+
+<script type="text/javascript">
+
+
+   $("#getMedia").submit(function(event){
+     var id = $('#media').val()
+        event.preventDefault();
+      // Ajax Post Call
+      $.ajax({
+        type: 'POST',
+        url: '/media/'+id,
+        success: function (res) {
+           console.log('/media/{id} ---> response is: %s', JSON.stringify(res))
+        },
+        error: function (res) {
+          console.log('Ajax call fails in /media/id-->post %s', JSON.stringify(res));
+        }
+      });
+   });
+</script>
+​
+</body>
+</html>
+​

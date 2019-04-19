@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Stackover flow clone -- Questions Management</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!---- template CSS/Javascript/Jquery ------->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script>
+
+  <!---- Customize CSS/Javascript/Jquery----------->
+   <link rel="stylesheet" type="text/css" href="/css/basic.css" >
+</head>
+<body>
+​
+<div class="container">
+  <h2>Questions Management</h2>
+  <button id='logout' class="btn btn-success" style="margin-left: 40%">Log Out</button><br><br>
+  <button id='mediaBtn' class="btn btn-success" style="margin-left: 30%" onclick="window.location.href='/media'">Go to Media Management</button><br><hr><br>
+ <!---Post a new question--->
+	 <div>
+		 <form id="addQuestion">
+		  	<div class="form-group">
+		      <label for="question_title"><mark>Question's Title: </mark></label>
+		      <input type="text" class="form-control" id="question_title" placeholder="Type the title of a new question" name="question_title" required>
+		    </div>
+		  	<div class="form-group">
+		      <label for="question_body"><mark>Question's Body: </mark></label>
+		      <input type="text" class="form-control" id="question_body" placeholder="Type the body of a new question" name="question_body" required>
+		    </div>
+		  	<div class="form-group">
+		      <label for="question_tags"><mark>Question's Tags: </mark></label>
+		      <input type="text" class="form-control" id="question_tags" placeholder="Type the Tags of a new question( seperated by ;)" name="question_tags" required>
+		    </div>
+         <% if (allMedia.length > 0) { %>
+		  	<div class="form-group">
+          <select multiple title="Select Media" class="selectpicker" id='question_media'>
+                 <% for (var i = 0; i < allMedia.length; i++) { %>
+                    <option value="<%= allMedia[i] %>" >  <%= allMedia[i] %> </option>
+                  <% } %>
+                
+            </select>
+        </div>
+          <% } %>  
+          <!------
+		      <label for="question_media"><mark>Question's media: </mark></label>
+		      <input type="text" class="form-control" id="question_media" placeholder="Type the media id for the new posted question(,)" name="question_media">
+          ---->
+		    <button type="submit" class="btn btn-primary" id='post' style="margin-left: 40%">Post A New Question</button>
+		  </form>
+	</div>
+ <hr><br>
+
+	<div>
+		<form id="getQuestion">
+		  	<div class="form-group">
+		      <label for="question_id">Question's ID: </label>
+		      <input type="text" class="form-control" id="question_id" placeholder="type id for getting the question" name="question_id" required>
+		    </div>
+		    <button type="submit" class="btn btn-primary">Get Question</button>
+		  </form>
+	</div><br>
+
+
+  <div>
+    <form id="upvoteQuestion">
+        <div class="form-group">
+          <label for="question_id_upvote">Question's ID: </label>
+          <input type="text" class="form-control" id="question_id_upvote" placeholder="type id for upvoting the question" name="question_id_upvote" required>
+          <input type="checkbox" name="upvote_check" class='upvote_check' value='upvote' checked> Upvote <br>
+           <input type="checkbox" name="upvote_check" class='upvote_check' value='downvote'> Downvote <br>
+        </div>
+        <button type="submit" class="btn btn-primary" id="upvote">Upvote Question</button>
+      </form>
+  </div>
+  <br>
+
+
+	<div>
+		<form id="deleteQuestion">
+		  	<div class="form-group">
+		      <label for="question_id_delete">Question's ID: </label>
+		      <input type="text" class="form-control" id="question_id_delete" placeholder="type id for deleting the question" name="question_id_delete" required>
+		    </div>
+		    <button type="submit" class="btn btn-primary" id="delete">Delete Question</button>
+		  </form>
+	</div>
+<!---------- Search Questions by some limitation ------------------------>
+<br><hr><br>
+  <div>
+    <form id="searchQuestion" >
+        <div class="form-group">
+          <label for="timestamp">timestamp: </label>
+          <input type="number" class="form-control" id="timestamp" placeholder="represented as Unix time" name="timestamp">
+        </div>
+
+        <div class="form-group">
+          <label for="limit">limit(max: 100): </label>
+          <input type="number" max="100" class="form-control" id="limit" placeholder="Number of questions to return" name="limit">
+        </div>
+
+          <div class="form-group">
+            <label for="accepted_answer">with accepted answer: </label>
+            <input type="checkbox" name="accepted_answer" class="accepted_answer" value="no" checked> No<br>
+            <input type="checkbox" name="accepted_answer" class="accepted_answer" value="yes"> Yes <br>
+        </div>
+
+        <div class="form-group">
+          <label for="query">query string: </label>
+          <input type="text" class="form-control" id="query" placeholder="Search Query which supports spaces" name="query">
+        </div>
+
+        <div class="form-group">
+          <label for="sort_by">sort by(time/score): </label>
+            <input type="checkbox" name="sort_by" class="sort_by" value="score" checked> Score<br>
+            <input type="checkbox" name="sort_by" class="sort_by" value="time"> Time<br>
+        </div>
+
+
+        <div class="form-group">
+          <label for="tags">tags(seperated by ;): </label>
+          <input type="text" class="form-control" id="tags" placeholder="Return only questions which have all of these tasg(and)" name="tags">
+        </div>
+
+        <div class="form-group">
+            <label for="has_media">Contains medias: </label>
+            <input type="checkbox" name="has_media" class="has_media" value="no" checked> No<br>
+            <input type="checkbox" name="has_media" class="has_media" value="yes"> Yes <br>
+        </div>
+
+        <button type="submit" class="btn btn-success" > Search Questions </button>
+      </form>
+  </div>
+<br>
+
+  <div>
+    <form id="enterAnswer" method="GET" action="/questions/answers">
+        <div class="form-group">
+          <br>
+        <button type="submit" id='answerBtn'class="btn btn-success">Redirect to Answers Management</button>
+      </div>
+   </form>
+  </div>
+
+ <br><br>
+</div>
+<hr>
+
+
+<script type="text/javascript">
+	// need to log in for postng new question and upload medias
+  var check_name = "<%= name %>";
+  if(check_name.length > 0){ // already logged
+      $('#logout').text('Log Out');
+      // diaable to post and go to media management
+      $('#post').attr("disabled", false);  
+      $('#mediaBtn').attr("disabled", false);  
+      $('#delete').attr("disabled", false); 
+      $('#upvote').attr("disabled", false);   
+  }else{ // do not log in
+      $('#logout').text('Log In');
+      // able to post and go to media management
+      $('#post').attr("disabled", true); 
+      $('#mediaBtn').attr("disabled", true); 
+      $('#delete').attr("disabled", true);  
+       $('#upvote').attr("disabled", true);  
+  }
+
+// Log out or Log in
+  $('#logout').click(function(event){
+      event.preventDefault();
+      if(check_name.length <= 0){ // go to login page
+        window.location.href = 'http://64.190.205.52/login';
+        //  window.location.href = 'http://localhost:3000/login'
+      }else{
+          $.ajax({
+            type: 'POST',
+            url: '/logout',
+            processData: false,
+            success: function (res) {
+              if(res.status == 'OK'){
+                     window.location.href = 'http://64.190.205.52/login';
+                    //window.location.href = 'http://localhost:3000/login'
+              }else if(res.status == 'error'){
+                 console.log("Failed to logout: %s\n", res.error);
+              }
+            },
+            error: function (res) {
+              console.log('Ajax call post failed in /logout: %s\n', res);
+            }
+          });
+        }
+  });
+
+  // /questions/add
+   $("#addQuestion").submit(function(event){
+        event.preventDefault();
+        var tags = $('#question_tags').val().split(';');
+        console.log("tags:" + tags);
+        var media = [];
+        $("#question_media > option").each(function(){
+            media.push(this.val());
+          });
+        // var media= $('#question_media').val()
+        // if(media.length > 0)
+        //     media = media.split(','); // get media array
+        // else
+        //   media = []
+        console.log("question's media: " + media);
+      $.ajax({
+        type: 'POST',
+        url: '/questions/add',
+        dataType: 'json',
+        data: JSON.stringify({
+           title: $("#question_title").val(),
+           body: $("#question_body").val(),
+           tags: tags,
+           media: media  // Optional
+        }),
+        contentType: 'application/json',
+        processData: false,
+        success: function (res) {
+           console.log("/questions/add-->post: response: %s", JSON.stringify(res));
+          if(res.status == 'OK'){
+              console.log("Succeed to add a new question" );
+          }else if(res.status == 'error'){
+             console.log("Failed to post a new question: %s\n", res.error);
+          }
+        },
+        error: function (res) {
+          console.log('Ajax post call failed in question/add: ' + JSON.stringify(res));
+        }
+      });
+   });
+
+// Get a  question
+ $("#getQuestion").submit(function(event){
+        event.preventDefault();
+        var id = $('#question_id').val()
+      // Ajax Post Call
+      console.log('questions id: %s\n', id)
+      var my_url = "/questions/"+id
+      console.log("url: %s\n", my_url)
+      $.ajax({
+        type: 'GET',
+        url: my_url,
+       // processData: false,
+        success: function (res) {
+          console.log("/questions/{id}-->get: response: %s\n ", JSON.stringify(res));
+          if(res.status == 'OK'){
+              console.log("Succeed to get the question with id %s\n", id )
+          }else if(res.status == 'error'){
+             console.log("Failed to get the questios with id(%s): %s\n", id, res.error)
+          }
+        },
+        error: function (res) {
+          console.log('Ajax  get call faild in question/{id} : %s\n', JSON.stringify(res));
+        }
+      });
+   });
+
+ // delete a  question
+ $("#deleteQuestion").submit(function(event){
+        event.preventDefault();
+      // Ajax Post Call
+      var id = $('#question_id_delete').val()
+      $.ajax({
+        type: 'DELETE',
+        url: '/questions/'+id,
+        processData: false,
+        success: function (res) {
+           console.log("/questions/{id}-->delete: response: %s\n ", JSON.stringify(res));
+        },
+        error: function (res) {
+          console.log('Ajax delete call failed in question/{id} : %s\n', JSON.stringify(res));
+        }
+      });
+   });
+
+
+$('#searchQuestion').submit(function(event){
+      event.preventDefault();
+      var timestamp = $('#timestamp').val() // number ; default: current time
+      var limit = $('#limit').val() // default: 25, max 100
+      var queryStr= $('#query').val()
+      var tags = $('#tags').val()
+
+      var sort_by = $('.sort_by').val()
+      console.log('sort_by: %s ', sort_by)
+      var accepted_answer = $('.accepted_answer').val()
+      console.log('accepted_answer: %s ', accepted_answer)
+      if(accepted_answer == 'no')
+          accepted_answer = false
+      else
+        accepted_answer = true
+      var has_media = $('.has_media').val()
+
+      if(has_media == 'no')
+          has_media = false
+      else
+        has_media = true
+      console.log('has_media: %s ', has_media)
+
+      if(!timestamp){
+          timestamp = Math.round(new Date() / 1000);
+      }
+        console.log('timestamp %s\n:', timestamp)
+      if(!limit){
+         limit = 25
+      }
+      console.log('limit %s\n:', limit)
+      if(tags && tags.length > 0){
+          tags = tags.split(';');
+      }
+      console.log("tags:" + tags);
+
+      $.ajax({
+        type: 'POST',
+        url: '/search',
+        dataType: 'json',
+        data: JSON.stringify({
+           timestamp: timestamp,
+           limit: limit,
+           q: queryStr, // optional
+           sort_by: sort_by,
+           tags: tags,
+           has_media: has_media,
+           accepted: accepted_answer
+        }),
+        contentType: 'application/json',
+        success: function (res) {
+           console.log("/search-->post: response: %s", JSON.stringify(res));
+          if(res.status == 'OK'){
+              console.log('search result %s\n', res.questios)
+          }else if(res.status == 'error'){
+             console.log("Failed to search questions: %s\n", res.error);
+          }
+        },
+        error: function (res) {
+          console.log('Ajax post call failed in /search: ' + JSON.stringify(res));
+        }
+         });
+      });
+
+   // upvote a question
+ $("#upvoteQuestion").submit(function(event){
+        event.preventDefault();
+      // Ajax Post Call
+      var id = $('#question_id_upvote').val()
+      var upvote_check =  $('upvote_check').val()
+      var upvote = true
+      if(upvote_check == 'downvote'){
+          upvote = false
+      }
+      console.log('upvote value : '+ upvote)
+      $.ajax({
+        type: 'POST',
+        url: '/questions/'+id+'/upvote',
+        dataType: 'json',
+        data: JSON.stringify({
+           upvote: upvote,
+        }),
+        contentType: 'application/json',
+        processData: false,
+        success: function (res) {
+           console.log("/questions/{id}/upvote-->post: response: %s\n ", JSON.stringify(res));
+        },
+        error: function (res) {
+          console.log('Ajax post call failed in question/{id}/upvote : %s\n', JSON.stringify(res));
+        }
+      });
+   });
+
+</script>
+​
+</body>
+</html>
+​
