@@ -157,8 +157,9 @@ app.post('/adduser', (req, res) => {
   smtpTransport.sendMail(mailOptions, function (error, response) {
     if (error) {
       console.log('in /adduser ---> failed to send mail: %s\n', JSON.stringify(error))
-      res.json({ status: 'error', error: JSON.stringify(error) })
+      res.status(400).send({ status: 'error', error: JSON.stringify(error) })
     }
+
   })
   // save the new user instance to db
   newUser.save().then(item => {
@@ -167,7 +168,7 @@ app.post('/adduser', (req, res) => {
     res.json({ status: 'OK' })
   }).catch(err => {
     console.log('fail to create a new disabled uesr!---> %s\n', JSON.stringify(err))
-    res.json({ status: 'error', error: err })
+    res.status(400).send({ status: 'error', error: err })
   })
 })
 
@@ -184,10 +185,10 @@ app.post('/verify', (req, res) => {
       if (doc.nModified > 0) {
         res.json({ status: 'OK' })
       } else {
-        res.json({ status: 'error', error: 'you did not modified anything!' })
+        res.status(404).send({ status: 'error', error: 'you did not modified anything!' })
       }
     }).catch((err) => {
-      res.json({ status: 'error', error: err })
+      res.status(400).send({ status: 'error', error: err })
     })
 })
 /**
@@ -200,10 +201,10 @@ app.post('/login', async (req, res) => {
     password: req.body.password,
     verify: 'true'
   }).exec(function (err, doc) {
-    if (err) { res.json({ status: 'error', error: err }) } else {
+    if (err) { res.status(400).send({ status: 'error', error: err }) } else {
       if (doc == null) {
         console.log('no active user is founded')
-        res.json({ status: 'error', error: 'no active user founded!' })
+        res.status(404).send({ status: 'error', error: 'no active user founded!' })
       } else {
         req.session.username = req.body.username
         req.session.user = doc
@@ -220,7 +221,7 @@ app.post('/login', async (req, res) => {
 app.post('/logout', (req, res) => {
   req.session.destroy(function (err) {
     if (err) {
-      return res.json({ status: 'error', error: err })
+      return res.status(400).send({ status: 'error', error: err })
     }
   })
   // }
@@ -251,12 +252,12 @@ app.post('/questions/add', (req, res) => {
     newQuestion.save().then(item => {
       res.json({ status: 'OK', id: newQuestion.id })
     }).catch(err => {
-      res.json({ status: 'error', error: err })
+      res.status(400).send({ status: 'error', error: err })
     })
   } else {
     // Need to login firstly
     console.log('need to login in')
-    res.json({ status: 'error', error: 'need to login firstly to post a new question' })
+    res.status(401).send({ status: 'error', error: 'need to login firstly to post a new question' })
   }
 })
 /**
@@ -275,10 +276,10 @@ app.get('/questions/:id', (req, res) => {
   // $addToSet --avoid duplicated to add data in array
   Question.findOneAndUpdate({ id: req.params.id }, { $addToSet: { viewers: viewerID } }, { new: true }).populate('user').exec(function (err, doc) {
     if (err) {
-      res.json({ status: 'error', error: err })
+      res.status(400).send({ status: 'error', error: err })
     } else { // Find the question
       if (doc == null) {
-        res.json({ status: 'error', error: 'did not find any question you want to update-- doc is null' })
+        res.status(404).send({ status: 'error', error: 'did not find any question you want to update-- doc is null' })
       } else {
         console.log('get question detail info----> %s\n', JSON.stringify(doc))
         var score = doc.upvote.length - doc.downvote.length
@@ -302,10 +303,10 @@ app.delete('/questions/:id', (req, res) => {
         res.status(400).send({ status: 'error', error: err })
       } else {
         if (doc == null) { // there's nothing to delte
-          res.status(204).send({ status: 'error', error: 'without content, cannot to delete it' })
+          res.status(404).send({ status: 'error', error: 'without content, cannot to delete it' })
         } else {
           if (!(doc.user).equals(mySession.user._id)) {
-            res.status(404).send({ status: 'error', error: 'you are not the original asker of the question, cannot to delete it' })
+            res.status(401).send({ status: 'error', error: 'you are not the original asker of the question, cannot to delete it' })
           } else {
             // Remove related media files for answers
             var answers = doc.answers // get answers object related the deleted question
@@ -341,7 +342,7 @@ app.delete('/questions/:id', (req, res) => {
             }
             Answer.remove({ _id: { $in: answers } }, (err_1, data) => {
               if (err_1) {
-                return res.status(404).send({ status: 'error', error: err_1 })
+                return res.status(400).send({ status: 'error', error: err_1 })
               }
             })
             res.status(200).send({ status: 'OK' })
@@ -350,7 +351,7 @@ app.delete('/questions/:id', (req, res) => {
       }
     })
   } else {
-    res.status(404).send({ status: 'error', error: 'to delete the question, you need to login firstly' })
+    res.status(401).send({ status: 'error', error: 'to delete the question, you need to login firstly' })
   }
 })
 
@@ -373,7 +374,7 @@ app.post('/questions/:id/answers/add', (req, res) => {
     newAnswer.save().then(item => {
       console.log('Save a answer successfully! ----> %s\n', item)
     }).catch(err => {
-      res.json({ status: 'error', error: err })
+      res.status(400).send({ status: 'error', error: err })
     })
 
     Question.findOneAndUpdate({ id: question_id }, { $addToSet: { answers: newAnswer._id } }).exec(function (err, doc) {
@@ -385,14 +386,14 @@ app.post('/questions/:id/answers/add', (req, res) => {
           }
         })
         if (err) { console.log('error --->%s\n', JSON.stringify(err)) }
-        res.json({ status: 'error', error: 'faile to add new answer to the question' })
+        res.status(400).send({ status: 'error', error: 'faile to add new answer to the question' })
       } else {
         // Find the question adn update
         res.json({ status: 'OK', id: newAnswer.id })
       }
     })
   } else {
-    res.json({ status: 'error', error: 'you need to log in firstly to post a new answer' })
+    res.status(401).send({ status: 'error', error: 'you need to log in firstly to post a new answer' })
   }
 })
 
@@ -403,10 +404,10 @@ app.get('/questions/:id/answers', (req, res) => {
   console.log('get all asnwers of the question------>%s\n', req.params.id)
   Question.findOne({ id: req.params.id }).exec(function (err, doc) {
     if (err) {
-      res.json({ status: 'error', error: err })
+      res.status(400).send({ status: 'error', error: err })
     } else {
       if (doc == null) { // did not find the question
-        res.json({ status: 'error', error: 'doc is none' })
+        res.status(404).send({ status: 'error', error: 'doc is none' })
       } else {
         // find the question with specified id
         var answersObj = doc.answers// array of asnwers's _id
@@ -414,7 +415,7 @@ app.get('/questions/:id/answers', (req, res) => {
         Answer.find({ '_id': { $in: answersObj } }).populate({ path: 'user' }).exec(function (err_1, docs) {
           if (err_1) {
             console.log('failed to find users\n')
-            res.json({ status: 'error', error: err_1 })
+            res.status(400).send({ status: 'error', error: err_1 })
           } else {
             var return_answers = []
             for (var i = 0; i < docs.length; i++) {
@@ -444,9 +445,10 @@ app.post('/search', (req, res) => {
     query = req.body.q // string, support space
     tags = req.body.tags // array
   }
+  // check constains and assign default values
   if (!timestamp) { timestamp = unixTime(new Date()) }
   if (!limit) { limit = 25 }
-  if (limit > 100) { return res.json({ status: 'error', error: 'limit should be less than 100' }) }
+  if (limit > 100) { return res.status(400).send({ status: 'error', error: 'limit should be less than 100' }) }
   if (!sort_by) { sort_by = 'score' }
   if (has_media == null) { has_media = false }
   if (accepted == null) { accepted = false }
@@ -456,7 +458,7 @@ app.post('/search', (req, res) => {
   // get all questions firstly
   Question.find({}).populate('user').exec(function (err, docs) {
     if (err) {
-      res.json({ status: 'error', error: err })
+      res.status(400).send({ status: 'error', error: err })
     } else {
       var all_questions = docs
 
@@ -519,10 +521,10 @@ app.post('/questions/:id/upvote', (req, res) => {
   if (mySession.username) {
     Question.findOne({ id: req.params.id }).exec(function (err, doc) {
       if (err) {
-        res.json({ status: 'error', error: err })
+        res.status(400).send({ status: 'error', error: err })
       } else {
         if (doc == null) {
-          res.json({ status: 'error', error: 'did not find question with id:  ' + req.params.id })
+          res.status(404).send({ status: 'error', error: 'did not find question with id:  ' + req.params.id })
         } else {
           // get a question
           var upvote = req.body.upvote
@@ -538,20 +540,20 @@ app.post('/questions/:id/upvote', (req, res) => {
             // already upvoted or downvoted, need to downvoted or upvoted
             Question.findOne({ id: req.params.id }, { $push: { new_op: mySession.user.id } }).populate('user').exec(function (err_1, doc_1) {
               if (err_1) {
-                res.json({ status: 'error', error: err_1 })
+                res.status(400).send({ status: 'error', error: err_1 })
               }
             })
 
             Question.findOne({ id: req.params.id }, { $pull: { field_op: mySession.user.id } }).populate('user').exec(function (err_1, doc_1) {
               if (err_1) {
-                res.json({ status: 'error', error: JSON.stringify(err_1) })
+                res.status(400).send({ status: 'error', error: JSON.stringify(err_1) })
               }
             })
           } else {
             // need to upvote or downvote
             Question.findOne({ id: req.params.id }, { $push: { field_op: mySession.user.id } }).populate('user').exec(function (err_1, doc_1) {
               if (err_1) {
-                res.json({ status: 'error', error: err_1 })
+                res.status(400).send({ status: 'error', error: err_1 })
               }
             })
           }
@@ -560,21 +562,21 @@ app.post('/questions/:id/upvote', (req, res) => {
       }
     })
   } else {
-    res.json({ status: 'error', error: 'you need to login firstly' })
+    res.status(401).send({ status: 'error', error: 'you need to login firstly' })
   }
 })
 /*
-  * upvates or downvotes the answers (in/decrements) score
+  * upvotes or downvotes the answers (in/decrements) score
 */
 app.post('/answers/:id/upvote', (req, res) => {
   mySession = req.session
   if (mySession.username) {
     Answer.findOne({ id: req.params.id }).exec(function (err, doc) {
       if (err) {
-        res.json({ status: 'error', error: err })
+        res.status(400).send({ status: 'error', error: err })
       } else {
         if (doc == null) {
-          res.json({ status: 'error', error: 'did not find answer with id:  ' + req.params.id })
+          res.status(404).send({ status: 'error', error: 'did not find answer with id:  ' + req.params.id })
         } else {
           // get an answer
           var upvote = req.body.upvote
@@ -590,20 +592,20 @@ app.post('/answers/:id/upvote', (req, res) => {
             // already upvoted or downvoted, need to downvoted or upvoted
             Answer.findOne({ id: req.params.id }, { $push: { new_op: mySession.user.id } }).populate('user').exec(function (err_1, doc_1) {
               if (err_1) {
-                res.json({ status: 'error', error: err_1 })
+                res.status(400).send({ status: 'error', error: err_1 })
               }
             })
 
             Answer.findOne({ id: req.params.id }, { $pull: { field_op: mySession.user.id } }).populate('user').exec(function (err_1, doc_1) {
               if (err_1) {
-                res.json({ status: 'error', error: JSON.stringify(err_1) })
+                res.status(400).send({ status: 'error', error: JSON.stringify(err_1) })
               }
             })
           } else {
             // need to upvote or downvote
             Answer.findOne({ id: req.params.id }, { $push: { field_op: mySession.user.id } }).populate('user').exec(function (err_1, doc_1) {
               if (err_1) {
-                res.json({ status: 'error', error: err_1 })
+                res.status(400).send({ status: 'error', error: err_1 })
               }
             })
           }
@@ -612,7 +614,7 @@ app.post('/answers/:id/upvote', (req, res) => {
       }
     })
   } else {
-    res.json({ status: 'error', error: 'you need to login firstly' })
+    res.status(401).send({ status: 'error', error: 'you need to login firstly' })
   }
 })
 
@@ -626,20 +628,20 @@ app.get('/answers/:id/accept', (req, res) => {
   if (mySession.username) {
     Answer.findOne({ id: req.params.id }).populate('user').exec(function (err, doc) {
       if (err) {
-        res.json({ status: 'error', error: err })
+        res.status(400).send({ status: 'error', error: err })
       } else {
         if (doc == null) {
-          res.json({ status: 'error', error: "there's without any asnwer with id: " + req.params.id })
+          res.status(404).send({ status: 'error', error: "there's without any asnwer with id: " + req.params.id })
         } else {
           // find the answer
           if (doc.is_accepted) {
-            res.json({ status: 'error', error: "there's one accepted answer" })
+            res.status(409).send({ status: 'error', error: "there's one accepted answer" })
           }
           // find a question related to the answer
           var question_id = doc.question_id
           Questions.findOne({ id: question_id }).populate('user').exec(function (err_1, doc_1) {
             if (err_1) {
-              res.json({ status: 'error', error: err_1 })
+              res.status(400).send({ status: 'error', error: err_1 })
             }
             if (doc_1.user.username == mySession.username) {
               // orginal asker of the question
@@ -647,17 +649,17 @@ app.get('/answers/:id/accept', (req, res) => {
                 .then((doc_2) => {
                   res.json({ status: 'OK' })
                 }).catch((err_2) => {
-                  res.json({ status: 'error', error: err_2 })
+                  res.status(400).send({ status: 'error', error: err_2 })
                 })
             } else {
-              res.json({ status: 'error', error: 'you are not the original asker of the question ' })
+              res.status(401).send({ status: 'error', error: 'you are not the original asker of the question ' })
             }
           })
         }
       }
     })
   } else {
-    res.json({ status: 'error', error: 'you need to login firstly' })
+    res.status(401).send({ status: 'error', error: 'you need to login firstly' })
   }
 })
 
@@ -673,10 +675,10 @@ app.post('/addmedia', upload.single('content'), (req, res) => {
       console.log('filename: %s\n', req.file.filename)
       res.json({ status: 'OK', id: req.file.filename }) // filename = shortId + originalname
     } else {
-      res.json({ status: 'error', error: 'Error in uploading file' })
+      res.status(400).send({ status: 'error', error: 'Error in uploading file' })
     }
   } else {
-    res.json({ status: 'error', error: 'Need to login firstly to upload a new file' })
+    res.status(400).send({ status: 'error', error: 'Need to login firstly to upload a new file' })
   }
 })
 
@@ -699,7 +701,7 @@ app.get('/media/:id', (req, res) => {
     var file_path = path.join(__dirname, '/uploads/' + mediaID)
     fs.readFile(file_path, { encoding: 'utf-8' }, function (err, data) { // in binary
       if (err) {
-        res.json({ status: 'error', error: err })
+        res.status(400).send({ status: 'error', error: err })
       } else { // find one file
         var original = mediaID.split(' ')[1]
         var extension = original.split('.')[1]
@@ -709,7 +711,7 @@ app.get('/media/:id', (req, res) => {
       }
     })
   } else {
-    res.json({ status: 'error', error: 'Need to login firstly to get all media files' })
+    res.status(401).send({ status: 'error', error: 'Need to login firstly to get all media files' })
   }
 })
 
@@ -724,12 +726,12 @@ app.get('/user/:username', (req, res) => {
     username: req.params.username
   }).then((doc) => {
     if (doc == null) {
-      res.json({ status: 'error', error: 'did not find this user with name: ' + req.params.username })
+      res.status(404).send({ status: 'error', error: 'did not find this user with name: ' + req.params.username })
     } else {
       res.json({ status: 'OK', user: { email: doc.email, reputation: doc.reputation } })
     }
   }).catch((err) => {
-    res.json({ status: 'error', error: err })
+    res.status(400).send({ status: 'error', error: err })
   })
   // } else {
   //   res.json({ status: 'error', error: 'need to log in' })
@@ -743,13 +745,13 @@ app.get('/user/:username/questions', (req, res) => {
   // mySession = req.session
   // if (mySession.username && (mySession.username == req.params.username)) {
   User.findOne({ username: req.params.username }).exec(function (err, doc) {
-    if (err) { res.json({ status: 'error', error: err }) } else {
+    if (err) { res.status(400).send({ status: 'error', error: err }) } else {
       if (doc == null) {
-        res.json({ status: 'error', error: 'did not find any user' })
+        res.status(404).send({ status: 'error', error: 'did not find any user' })
       } else {
         Question.find({ user: doc._id }).populate('user').exec(function (err_1, docs) {
           if (err) {
-            res.json({ status: 'error', error: err })
+            res.status(400).send({ status: 'error', error: err })
           } else {
             var questions = []
             docs.forEach(function (ele, index) {
@@ -774,13 +776,13 @@ app.get('/user/:username/answers', (req, res) => {
   // mySession = req.session
   // if (mySession.username && (mySession.username == req.params.username)) {
   User.findOne({ username: req.params.username }).exec(function (err, doc) {
-    if (err) { res.json({ status: 'error', error: err }) } else {
+    if (err) { res.status(400).send({ status: 'error', error: err }) } else {
       if (doc == null) {
-        res.json({ status: 'error', error: 'did not find any user' })
+        res.status(404).send({ status: 'error', error: 'did not find any user' })
       } else {
         Answer.find({ user: doc._id }).populate('user').exec(function (err_1, docs) {
           if (err) {
-            res.json({ status: 'error', error: err })
+            res.status(400).send({ status: 'error', error: err })
           } else {
             var answers = []
             docs.forEach(function (ele, index) {
