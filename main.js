@@ -27,7 +27,7 @@ const app = express()
 mongoose.Promise = global.Promise
 // set up default mongoose connection -- localhost/ 127.0.0.1
 // mongoose.connect('mongodb://localhost:27017/project', { useNewUrlParser: true, useCreateIndex: true })
-mongoose.connect('mongodb://64.190.205.52:27017/personal', { useNewUrlParser: true, useCreateIndex: true })
+mongoose.connect('mongodb://64.52.86.95:27017/personal', { useNewUrlParser: true, useCreateIndex: true })
 
 /** ****************************** Application Configuration PARTS ******************************/
 app.use(express.static(path.join(__dirname, 'public')))
@@ -117,8 +117,8 @@ const Question = mongoose.model('Question', questionSchema)
 var smtpTransport = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'cheryl123liu@gmail.com', // your gmail
-    pass: '630future52mM@' // your password
+    user: 'cherylpub2019@gmail.com', // your gmail
+    pass: 'cheryl630test' // your password
   }
 })
 
