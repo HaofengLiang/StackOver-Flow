@@ -634,6 +634,7 @@ app.get('/answers/:id/accept', (req, res) => {
           res.status(404).send({ status: 'error', error: "there's without any asnwer with id: " + req.params.id })
         } else {
           // find the answer
+          // Haofeng: Check whether if we should move this check to some where else
           if (doc.is_accepted) {
             res.status(409).send({ status: 'error', error: "there's one accepted answer" })
           }
@@ -645,14 +646,22 @@ app.get('/answers/:id/accept', (req, res) => {
             }
             if (doc_1.user.username == mySession.username) {
               // orginal asker of the question
-              Answer.updateOne({ id: req.params.id }, { $set: { is_accepted: true } })
+              // Haofeng: Modified at 4/21 Need to CHECK
+              if (!doc_1.accepted_answer) {
+                Question.updateOne({ id: doc_1.id }, { $set: { accepted_answer: req.params.id } })
                 .then((doc_2) => {
-                  res.json({ status: 'OK' })
+                  Answer.updateOne({ id: req.params.id }, { $set: { is_accepted: true } })
+                  .then((doc_3) => {
+                    res.json({ status: 'OK' })
+                  }).catch((err_3) => {
+                    res.status(400).send({ status: 'error', error: err_2 })
+                  })
                 }).catch((err_2) => {
                   res.status(400).send({ status: 'error', error: err_2 })
                 })
+              }
             } else {
-              res.status(401).send({ status: 'error', error: 'you are not the original asker of the question ' })
+              res.status(401).send({ status: 'error', error: 'you are not the original asker of the question' })
             }
           })
         }
