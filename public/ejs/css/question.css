@@ -1,0 +1,32 @@
+.question-container{
+	min-height: 150px;
+	max-width: 600px;
+	border: 2px solid gray;
+	padding: 10px;
+	margin: 5px auto;
+}
+
+.question-container h3 {
+	font-size: 16px;
+}
+
+.started {
+	font-size: 14px;
+	float: right;
+}
+
+.cp {
+	float: left;
+}
+
+.cp > * {
+	float: left;
+	text-align: center;
+	margin: 0px 5px;
+}
+
+.post-tag{
+	font-size: 12px;
+	padding: 4px 4px;
+	float: left;
+}
