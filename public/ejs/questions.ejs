@@ -2,18 +2,10 @@
 <html lang="en">
 <head>
   <title>Stackover flow clone -- Questions Management</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!---- template CSS/Javascript/Jquery ------->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script>
-
-  <!---- Customize CSS/Javascript/Jquery----------->
-   <link rel="stylesheet" type="text/css" href="/css/basic.css" >
+  <% include parts/head.ejs %>
 </head>
 <body>
-​
+  <% include parts/navbar.ejs %>
 <div class="container">
   <h2>Questions Management</h2>
   <button id='logout' class="btn btn-success" style="margin-left: 40%">Log Out</button><br><br>

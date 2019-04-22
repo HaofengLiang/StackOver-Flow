@@ -129,7 +129,8 @@ var backdoor = 'abracadabra' // backdoor key for verifying user account
 
 /** ************************************* GET && POST methods ************************************/
 app.get(['/', '/index'], (req, res) => {
-  res.send('Welcome, This is my homepage for CSE356 Stackover Flow Clone')
+  res.render(path.join(__dirname, 'public/ejs/index'))
+  //res.send('Welcome, This is my homepage for CSE356 Stackover Flow Clone')
 })
 /**
   * /adduser ----POST

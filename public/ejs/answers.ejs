@@ -2,88 +2,80 @@
 <html lang="en">
 <head>
   <title>Stackover flow clone -- Answers Management </title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!---- template CSS/Javascript/Jquery ------->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script>
-
-  <!---- Customize CSS/Javascript/Jquery----------->
-   <link rel="stylesheet" type="text/css" href="/css/basic.css" >
+  <% include parts/navbar.ejs %>
 </head>
 <body>
-​
-<div class="container">
-  <h2>Answers Management</h2>
-  <button id='logout' class="btn btn-success" style="margin-left: 40%">Log Out</button><br>
- <!---Post a new answer--->
-    <hr>
+  <% include parts/navbar.ejs %>
+  <div class="container">
+    <h2>Answers Management</h2>
+    <button id='logout' class="btn btn-success" style="margin-left: 40%">Log Out</button><br>
+   <!---Post a new answer--->
+      <hr>
 
-     <form id="addAnswer">
-         <div class="form-group">
-            <label for="question_id"><mark>Question's ID: </mark></label>
-            <input type="text" class="form-control" id="question_id" placeholder="Type the Question's ID" name="question_id" required>
-        </div>
+       <form id="addAnswer">
+           <div class="form-group">
+              <label for="question_id"><mark>Question's ID: </mark></label>
+              <input type="text" class="form-control" id="question_id" placeholder="Type the Question's ID" name="question_id" required>
+          </div>
 
-        <div class="form-group">
-          <label for="answer_body"><mark>Answer's Body: </mark></label>
-          <input type="text" class="form-control" id="answer_body" placeholder="Type the body of a new answer" name="answer_body" required>
-        </div>
-        <% if (allMedia.length > 0) { %>
-            <div class="form-group">
-              <select multiple title="Select Media" class="selectpicker" id='answer_media'>
-                     <% for (var i = 0; i < allMedia.length; i++) { %>
-                        <option value="<%= allMedia[i] %>">  <%= allMedia[i] %> </option>
-                         <% } %>  
-                </select>
-              <!------
-              <label for="answer_media"><mark>Answer's media: </mark></label>
-              <input type="text" class="form-control" id="answer_media" placeholder="Type the media id for the new posted answer(,)" name="answer_media">
-              ---->
-            </div>
-        <% } %>  
-        <button type="submit" class="btn btn-primary" id='post' style="margin-left: 40%">Post A New answer</button>
-      </form>
-      <br>
- <hr>
-
-  <div>
-    <form id="getAnswers">
           <div class="form-group">
-            <label for="question_id_all"><mark>Question's ID: </mark></label>
-            <input type="text" class="form-control" id="question_id_all" placeholder="Type the Question's ID for retrieving all answers" name="question_id_all" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Get All Answers</button> 
-    </form>
-  </div>
-<br><br>
+            <label for="answer_body"><mark>Answer's Body: </mark></label>
+            <input type="text" class="form-control" id="answer_body" placeholder="Type the body of a new answer" name="answer_body" required>
+          </div>
+          <% if (allMedia.length > 0) { %>
+              <div class="form-group">
+                <select multiple title="Select Media" class="selectpicker" id='answer_media'>
+                       <% for (var i = 0; i < allMedia.length; i++) { %>
+                          <option value="<%= allMedia[i] %>">  <%= allMedia[i] %> </option>
+                           <% } %>  
+                  </select>
+                <!------
+                <label for="answer_media"><mark>Answer's media: </mark></label>
+                <input type="text" class="form-control" id="answer_media" placeholder="Type the media id for the new posted answer(,)" name="answer_media">
+                ---->
+              </div>
+          <% } %>  
+          <button type="submit" class="btn btn-primary" id='post' style="margin-left: 40%">Post A New answer</button>
+        </form>
+        <br>
+   <hr>
+
     <div>
-    <form id="acceptAnswers">
-          <div class="form-group">
-            <label for="accepted_id"><mark>Answer's ID: </mark></label>
-            <input type="text" class="form-control" id="accepted_id" placeholder="Type the Answer's ID to be accepted" name="accepted_id" required>
-        </div>
-        <button type="submit" class="btn btn-primary" id='accept'>Accept the answer</button><br>
-    </form>
-  </div>
-<br><br>
-
-  <div>
-    <form id="upvoteAnswer">
-        <div class="form-group">
-          <label for="answer_id_upvote">Answer's ID: </label>
-          <input type="text" class="form-control" id="answer_id_upvote" placeholder="type id for upvoting the answer" name="answer_id_upvote" required>
-          <div style='margin-left: 30%'>
-            <input type="checkbox" name="upvote_check" class='upvote_check' value='upvote' checked> Upvote 
-             <input type="checkbox" style='margin-left: 5% !important'name="upvote_check" class='upvote_check' value='downvote'> Downvote 
-           </div>
-        </div>
-        <button type="submit" class="btn btn-primary" id="upvote">Upvote Answer</button>
+      <form id="getAnswers">
+            <div class="form-group">
+              <label for="question_id_all"><mark>Question's ID: </mark></label>
+              <input type="text" class="form-control" id="question_id_all" placeholder="Type the Question's ID for retrieving all answers" name="question_id_all" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Get All Answers</button> 
       </form>
+    </div>
+  <br><br>
+      <div>
+      <form id="acceptAnswers">
+            <div class="form-group">
+              <label for="accepted_id"><mark>Answer's ID: </mark></label>
+              <input type="text" class="form-control" id="accepted_id" placeholder="Type the Answer's ID to be accepted" name="accepted_id" required>
+          </div>
+          <button type="submit" class="btn btn-primary" id='accept'>Accept the answer</button><br>
+      </form>
+    </div>
+  <br><br>
+
+    <div>
+      <form id="upvoteAnswer">
+          <div class="form-group">
+            <label for="answer_id_upvote">Answer's ID: </label>
+            <input type="text" class="form-control" id="answer_id_upvote" placeholder="type id for upvoting the answer" name="answer_id_upvote" required>
+            <div style='margin-left: 30%'>
+              <input type="checkbox" name="upvote_check" class='upvote_check' value='upvote' checked> Upvote 
+               <input type="checkbox" style='margin-left: 5% !important'name="upvote_check" class='upvote_check' value='downvote'> Downvote 
+             </div>
+          </div>
+          <button type="submit" class="btn btn-primary" id="upvote">Upvote Answer</button>
+        </form>
+    </div>
+   <br><br>
   </div>
- <br><br>
-</div>
 
 
 <script type="text/javascript">
