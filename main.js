@@ -654,7 +654,7 @@ app.delete('/questions/:id', async function (req, res) {
           res.status(409).json({ status: 'error', error: "there's without any asnwer with id: or anwer is accpted: " + req.params.id });
         else{
              var getQuestion =  memcached.get(getAnswer.question_id);
-             if(getQuestion == nulll)
+             if(getQuestion == null)
                 getQuestion = await Questions.findOne({ id: getAnswer.question_id }).populate('user').exec();
              if(getQuestion == null || getQuestion.accepted_answer || getQuestion.user != req.signedCookies['user']._id)
                 res.status(409).json({ status: 'error', error: "This question has been accepted or not poster" });
@@ -717,6 +717,13 @@ app.get('/media/:id', async function(req, res){
     logger.error("failed to get media: "+ JSON.stringify(err));
      res.status(400).json({status:"error", error: err});
   }
+});
+app.get('/see',(req,res)=>{
+
+        console.log('come to main 0');
+        console.log('===============');
+        res.send('m0');
+
 });
 //***************************** Router Parts ************************************
 app.listen(3000, 'localhost', () => logger.info('Listening to 3000'))
