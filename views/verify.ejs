@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>StackOver Flow Clone --- -- Email Verification</title>
+  <% include ./head.ejs %>
+</head>
+<body>
+  <% include ./navbar.ejs %>
+<div class="container">
+  <h3 style="text-align: center;"> Stack OverFlow's Questions </h3>
+  <ul class="list-group" style="padding:0 1% 0 1%">
+			<li class="list-group-item list-group-header">Email Verification </li>
+			<li class="list-group-item list-body">
+         <form id="verify">
+            <div class="form-group">
+              <label for="email"  class="btn btn-secondary">Email:</label>
+              <input type="email" class="form-control" id="email" placeholder="Enter your email" name="email" required>
+              </div>
+              <div class="form-group">
+                <label for="key"  class="btn btn-secondary">Key:</label>
+                <input type="text" class="form-control" id="key" placeholder="Enter your key" name="key" required>
+              </div>
+              <button type="submit" class="btn btn-primary" style="margin-left: 40%">Verify Your Account</button>
+          </form>
+		</ul><br>
+</div>
+
+​<script type="text/javascript">
+   $("#verify").submit(function(event){
+        event.preventDefault();
+      // Ajax Post Call
+      $.ajax({
+        type: 'POST',
+        url: '/verify',
+        dataType: 'json',
+        data: JSON.stringify({
+           email: $("#email").val(),
+           key: $("#key").val()
+        }),
+        contentType: 'application/json',
+        success: function (res) {
+          $('#show_info').val(res);
+        },
+        error: function (res) {
+          $('#show_info').val(res);
+        }
+      });
+   });
+</script>
+</body>
+</html>
+​

@@ -1,0 +1,36 @@
+{
+  "name": "cse356",
+  "version": "1.0.0",
+  "description": "Course Project: Build Mini-stackoverflow API --- ## Common commands to be used ```sh # remove ssh host-key ssh-keygen -R [ip] # enter then instance using ssh ssh -i [path ot ssh private key file] [ubuntu/root]@[ip] ``` ## Terminal commands to install Nodejs(v11), MongoDB, Nginx  to one instance ### [Click here to get the instruction link install MongoDB](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/) ```sh # intstall curl sudo apt-get install curl # install Nodejs on Ubuntu  curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - sudo apt-get install -y nodejs # install Nginx on Ubuntu sudo apt-get install nginx ``` ---",
+  "main": "main.js",
+  "dependencies": {
+    "cassandra-driver": "^4.1.0",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.4",
+    "ejs": "^2.6.1",
+    "elasticsearch": "^16.0.0",
+    "express": "^4.16.4",
+    "formidable": "^1.2.1",
+    "memcached": "^2.2.2",
+    "mongoosastic": "^4.4.1",
+    "mongoose": "^5.5.5",
+    "sendmail": "^1.4.1",
+    "shortid": "^2.2.14",
+    "unix-time": "^1.0.1",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xiangyiliu18/cse356.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/xiangyiliu18/cse356/issues"
+  },
+  "homepage": "https://github.com/xiangyiliu18/cse356#readme"
+}

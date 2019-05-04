@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Firewall's Stack OverFlow</title>
+	<% include ./head.ejs %>
+</head>
+<body>
+	<% include ./navbar.ejs %><br>
+	<div class="container">
+		<div>
+			<button class="btn btn-info btn-block" style="font-weight: bold" onclick="window.location.href='http://130.245.171.156/media'"> <i class="fas fa-film"></i> Go To Media Center </button>
+			<button class="btn btn-info btn-block" style="font-weight: bold" onclick="window.location.href='http://130.245.171.156/answers'"> Go To Answer Center </button>
+		</div><hr>
+		<h3 style="text-align: center;"> Stack OverFlow's Questions <button class="btn btn-success btn" style="margin-left:5%;"><i class="far fa-plus-square"></i> Ask Question</button></h3>
+		<br>
+		<ul class="list-group" style="padding:0 1% 0 1%">
+			<li class="list-group-item list-group-header">Search Questions Only By ID </li>
+			<li class="list-group-item list-body">
+				<form id="getQuestion">
+					<div class="form-group">
+						<label for="question_id" class="btn btn-secondary">Enter Question ID: </label>
+						<input type="text" class="form-control" id="question_id" name="question_id" placeholder="Example: questionExample " required></input>
+					</div>
+				 <div style="margin-left: 15% " >
+						<button type="submit" class="btn btn-success btn-sm" id="getBtn"> Get Question </button>
+						<button type="submit" class="btn btn-success btn-sm" style="margin-left: 1%" id="upvoteBtn"> <i class="fas fa-thumbs-up"></i> Upvote Questin </button>
+						<button type="submit" class="btn btn-success btn-sm" style="margin-left: 1%" id="downBtn"> <i class="fas fa-thumbs-down"></i> Downvote Question </button>
+						<button type="submit" class="btn btn-success btn-sm" style="margin-left: 1%" id="answerBtn"> Get All Answer </button>
+						<button type="submit" class="btn btn-danger btn-sm" style="margin-left: 1%" id="deleteBtn"> <i class="fas fa-trash-alt"></i> Delete Questin </button>
+				</div>
+				</form>
+		</ul><br>
+
+		<ul class="list-group" style="padding:2% 1% 0 1%">
+				<li class="list-group-item list-group-header">Search Questions with multi limitation </li>
+				<li class="list-group-item list-body">
+					<form id="searchQuestions">
+						<div class="form-group">
+							<label for="question_timestamp" class="btn btn-secondary">Timestamp: </label>
+							<input type="number" class="form-control" id="question_timestamp" name="question_timestamp" placeholder="Timestamp: Integer "></input>
+						</div>
+						<div class="form-group">
+							<label for="question_limit" class="btn btn-secondary">Limit: </label>
+							<input type="number" max="100" min="25" class="form-control" id="question_limit" name="question_limit" placeholder="Limitation(25-100)"></input>
+						</div>
+						<div class="form-group">
+							<label for="question_q" class="btn btn-secondary">Query: </label>
+							<input type="text" class="form-control" id="question_q" name="question_q" placeholder="Query which supports spaces">
+						</div>
+						<div class="form-group">
+							<label for="question_tags" class="btn btn-secondary">Tags (seperated by spaces): </label>
+							<input type="text" class="form-control" id="question_tags" name="question_tags" placeholder="Return only questions which have all of these tasg(and)">
+						</div>
+						<div class="form-group" >
+								<label for="question_sort" class="btn btn-secondary">Sort by: </label><br>
+								<input type="radio" name="question_sort" value="score" checked> Score
+								<input type="radio" name="question_sort" value="time"> Timestamp
+						</div>
+						<div class="form-group" >
+								<label for="question_hasMedia" class="btn btn-secondary">Has Media: </label><br>
+								<input type="radio" name="question_hasMedia" value=0 checked> No
+								<input type="radio" name="question_hasMedia" value=1 > Yes
+						</div>
+						<div class="form-group" >
+								<label for="question_hasAnswer" class="btn btn-secondary">Has Accepted Answer: </label><br>
+								<input type="radio" name="question_hasAnswer" value=0 checked> No
+								<input type="radio" name="question_hasAnswer" value=1 > Yes
+						</div>
+							<button type="submit" class="btn btn-success btn" style="margin-left: 45%"> <i class="fas fa-search-plus"></i> Search Questions </button>
+						</form>
+			</ul><br>
+
+			<ul class="list-group" style="padding:0 1% 0 1%">
+					<li class="list-group-item list-group-header"> Questions Results: </li>
+					<li class="list-group-item list-body">
+						<textarea class="form-control form-rounded" rows="5">You do not get results currently !</textarea>
+					</li>
+			</ul><br>
+		</div>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!-- views/parts/navbar.ejs -->
+<nav id="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="#">Firewall's Stack Overflow</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <div class="form-inline" style="color: white; margin-left: 85%">
+            <% if(user) { %>
+                    <a class="btn btn-success my-2 mr-2 my-sm-0" href='http://130.245.171.156/logout'"> Log Out </a>
+            <% } else { %>
+              <a href="#loginModel" class="btn btn-success my-2 mr-2 my-sm-0" data-toggle="modal">Log In</a>
+            <% } %>
+            <a href="#signUpModel" class="btn btn-success my-2 my-sm-0" data-toggle="modal">Sign Up</a>
+        </div>
+    </div>
+</nav></br>
+<div class="container">
+    <div class="card">
+        <div class="card-body" style="color: white" >
+           <h5 class="card-title">Learn, Build, Share</h5>
+           <div style="margin-left: 5%">
+             <p>Each day, over 3 developers come to Firewall's Stack OverFlow</p>
+             <p>   Share their knowledge, and finish their couse project---- Mini Stack OverFlow API</p>
+             <p>API: Sign Up, Log In, Post Questions/Answers, Upload Media Files, Search Questiosn etc.</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="loginModel" class="modal fade">
+        <div class="modal-dialog modal-login">
+            <div class="modal-content">
+                <div class="modal-header">				
+                    <h4 class="modal-title">User Login</h4>	
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm" method="post">
+                        <div class="form-group">
+                            <input type="text" class="form-control" name="username" id="username" placeholder="Username" required="required">		
+                        </div>
+                        <div class="form-group">
+                            <input type="password" class="form-control" name="password" id="password" placeholder="Password" required="required">	
+                        </div>        
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary btn-lg btn-block login-btn">Login</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>  
+
+    <div id="signUpModel" class="modal fade">
+            <div class="modal-dialog modal-login">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">User Sign Up</h4>	
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="signUpForm" method="post">
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="username1" name="username1" placeholder="Username" required="required">		
+                            </div>
+                            <div class="form-group">
+                                 <input type="email" class="form-control" id="email1" placeholder="Email" name="email1" required="required">
+                            </div>
+                            <div class="form-group">
+                                <input type="password" class="form-control" id="password1" name="password1" placeholder="Password" required="required">	
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary btn-lg btn-block login-btn">Sign Up</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="http://130.245.171.156/verify" class="text-warning">Click Here to verify You Account</a>
+                    </div>
+                </div>
+            </div>
+        </div> 
+        <script type="text/javascript">
+            $("#loginForm").submit(function(event){
+                 event.preventDefault();
+               // Ajax Post Call
+               $.ajax({
+                 type: 'POST',
+                 url: '/login',
+                 dataType: 'json',
+                 data: JSON.stringify({
+                    username: $("#username").val(),
+                    password: $("#password").val()
+                 }),
+                 contentType: 'application/json',
+                 success: function (res) {
+                   if(res.status == 'OK'){
+                      window.location.href = 'http://130.245.171.156/';
+                   }else{
+                       alert(JSON.stringify(res));
+                   }
+                 },
+                 error: function (res) {
+                     alert(JSON.stringify(res))
+                 }
+               });
+            });
+            $("#signUpForm").submit(function(event){
+                 event.preventDefault();
+               // Ajax Post Call
+               $.ajax({
+                type: 'POST',
+                url: '/adduser',
+                dataType: 'json',
+                data: JSON.stringify({
+                username: $("#username1").val(),
+                email: $("#email1").val(),
+                password: $("#password1").val()
+                }),
+                contentType: 'application/json',
+                success: function (res) {
+                if(res.status == 'OK'){
+                    window.location.href = 'http://130.245.171.156/verify';
+                }else {
+                    alert(JSON.stringify(res));
+                }
+                },
+                error: function (res) {
+                    alert(JSON.stringify(res))
+                }
+                });
+            });
+       </script>

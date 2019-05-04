@@ -1,10 +1,13 @@
 module.exports = {
   apps : [{
     name: 'CSE356',
-    script: './main_1.js',
+    script: './main.js',
     // Options reference: https://pm2.io/doc/en/runtime/reference/ecosystem-file/
     args: 'one two',
-    instances: 1,
+    instances: 4,
+    out_file: './out.log',
+    err_file: './err.log',
+    merge_logs: true,
     autorestart: true,
     watch: false,
     max_memory_restart: '1G',
