@@ -1,14 +1,16 @@
 <!-- views/parts/navbar.ejs -->
 <nav id="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <a class="navbar-brand" href="#">Firewall's Stack Overflow</a>
+    <a class="navbar-brand" href="http://130.245.171.156/">Firewall's Stack Overflow</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <div class="form-inline" style="color: white; margin-left: 85%">
+        <div class="form-inline" style="color: white; margin-left: 80%">
             <% if(user) { %>
-                    <a class="btn btn-success my-2 mr-2 my-sm-0" href='http://130.245.171.156/logout'"> Log Out </a>
+                <form id="logoutForm" method="post">
+                    <button type="submit" class="btn btn-success my-2 mr-2 my-sm-0"> Log Out </button>
+                </form>
             <% } else { %>
               <a href="#loginModel" class="btn btn-success my-2 mr-2 my-sm-0" data-toggle="modal">Log In</a>
             <% } %>
@@ -28,6 +30,7 @@
         </div>
     </div>
 </div>
+
 <div id="loginModel" class="modal fade">
         <div class="modal-dialog modal-login">
             <div class="modal-content">
@@ -84,7 +87,6 @@
         <script type="text/javascript">
             $("#loginForm").submit(function(event){
                  event.preventDefault();
-               // Ajax Post Call
                $.ajax({
                  type: 'POST',
                  url: '/login',
@@ -101,8 +103,8 @@
                        alert(JSON.stringify(res));
                    }
                  },
-                 error: function (res) {
-                     alert(JSON.stringify(res))
+                 error: function (err) {
+                     alert(JSON.stringify(err))
                  }
                });
             });
@@ -126,9 +128,28 @@
                     alert(JSON.stringify(res));
                 }
                 },
-                error: function (res) {
-                    alert(JSON.stringify(res))
+                error: function (err) {
+                    alert(JSON.stringify(err))
                 }
                 });
+            });
+            
+            $("#logoutForm").submit(function(event){
+                 event.preventDefault();
+               // Ajax Post Call
+               $.ajax({
+                 type: 'POST',
+                 url: '/logout',
+                 success: function (res) {
+                   if(res.status == 'OK'){
+                      window.location.href = 'http://130.245.171.156/';
+                   }else{
+                       alert(JSON.stringify(err));
+                   }
+                 },
+                 error: function (err) {
+                     alert(JSON.stringify(err))
+                 }
+               });
             });
        </script>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Firewall's Stack OverFlow -- Media Management</title>
+  <% include ./head.ejs %>
+</head>
+<body>
+    <% include ./navbar.ejs %><hr><br>
+<div class="container">
+    <h3 style="text-align: center;"> Stack OverFlow' Media Management </h3>
+    <ul class="list-group" style="padding:0 1% 0 1%">
+        <li class="list-group-item list-group-header">Upload Media File </li>
+        <li class="list-group-item list-body">
+          <form id='addMedia' enctype="multipart/form-data" method="POST">
+              <div class="form-group">
+                <label for="content"  class="btn btn-secondary">Media File:</label>
+                <input type="file" class="form-control" id="content" name="content" placeholder="Upload a media file" name="content" required>
+              </div>
+              <% if(user) { %>
+              <button type="submit" class="btn btn-success" style="margin-left: 40%" >Upload Media</button>
+              <% } else{ %>
+              <button type="submit" class="btn btn-success" style="margin-left: 40%"  disabled>Upload Media</button>
+             <% } %>
+          </form>
+        </li>
+    </ul><br>
+
+    <ul class="list-group" style="padding:0 1% 0 1%">
+        <li class="list-group-item list-group-header">Get Media File </li>
+        <li class="list-group-item list-body">
+           <form id="getMedia">
+              <div class="form-group">
+                  <label for="media_id">Media ID:</label>
+                  <input type="text" class="form-control" id="media_id" placeholder="Type media's ID" name="media_id" required>
+              </div>
+              <button type="submit" class="btn btn-success" style="margin-left: 40%">Get Media</button>
+          </form><br>
+        <div id="showFile" >
+        </div>
+    </ul><br>
+</div>
+
+<script type="text/javascript">
+  $("#addMedia").submit(function(event){
+      event.preventDefault();
+      var form = new FormData($("#addMedia")[0]);
+      $.ajax({
+        url: '/addmedia',
+        method: "POST",
+        data: form,
+        enctype: 'multipart/form-data',
+        processData: false,  // Important!
+        contentType: false,
+        cache: false,
+        success: function(res){
+          if(res.status=='OK'){
+            alert("Add Media Successfully! Media ID is: " + res.id);
+            window.location.href = 'http://130.245.171.156/media';
+          }
+          else{
+            alert(JSON.stringify(res));
+          }
+        },
+        error: function(err){
+          alert(JSON.stringify(err));
+        }
+      });
+  })
+  $("#getMedia").submit(function(event){
+    var id = $('#media_id').val()
+       event.preventDefault();
+     $.ajax({
+       type: 'GET',
+       url: '/media/'+id,
+       processData: false,
+       success: function (res, status, xhr) {
+         if(res.status ==' error'){
+            $('#showFile').html("");
+              alert(JSON.stringify(res));
+         }else{
+            var header =xhr.getResponseHeader('Content-Type');
+            if(header.includes('image'))
+                $('#showFile').html('<img class="img-fluid" src="data:'+ header+';base64,' + res + '" />');
+            else if(header.includes('video')){
+              $('#showFile').html('<div align="center" class="embed-responsive embed-responsive-16by9"> <video class="embed-responsive-item" controls><source type="'+header+'"' +'src="data:'+ header+';base64,'+ res +'"></video></div>')
+            }
+         }
+       },
+       error: function (err) {
+         $('#showFile').html("");
+          alert(JSON.stringify(err));
+       }
+     });
+  });
+</script>
+​
+</body>
+</html>
+​

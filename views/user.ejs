@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Firewall's Stack OverFlow</title>
+	<% include ./head.ejs %>
+</head>
+<body>
+	<% include ./navbar.ejs %><br>
+	<div class="container">
+		<ul class="list-group" style="padding:0 1% 0 1%">
+			<li class="list-group-item list-group-header">Search User Info</li>
+			<li class="list-group-item list-body">
+				<form>
+					<div class="form-group">
+						<label for="username" class="btn btn-secondary">Enter Username: </label>
+						<input type="text" class="form-control" id="username" name="username" placeholder="username" required></input>
+					</div>
+				   <div style="margin-left: 15% " >
+                        <button type="submit" class="btn btn-success btn-sm" id="getBtn"><i class="fas fa-paper-plane"></i> Get User </button>
+                        <button type="submit" class="btn btn-success btn-sm" style="margin-left: 1%" id="questionBtn"> <i class="fas fa-paper-plane"></i> Get All Questions </button>
+						<button type="submit" class="btn btn-success btn-sm" style="margin-left: 1%" id="answerBtn"> <i class="fas fa-paper-plane"></i> Get All Answers </button>
+				   </div>
+				</form>
+			</li>
+		</ul><br>
+
+        <ul class="list-group" style="padding:0 1% 0 1%">
+			<li class="list-group-item list-group-header"> User Results: </li>
+			<li class="list-group-item list-body">
+				<textarea class="form-control form-rounded" rows="5" id='response'>You do not get results currently !</textarea>
+			</li>
+		</ul><br>
+	</div>
+		<script type="text/javascript">
+			$("getBtn").click(function() {
+				event.preventDefault();
+				$.ajax({
+					type: 'GET',
+					url: '/user/' + $("#username").val(),
+					processData: false,
+					success: function(res) {
+						if (res.status == 'OK') {
+							$('#response').val(JSON.stringify(res.user))
+						} else {
+							$('#response').val(JSON.stringify(res));
+						}
+					},
+					error: function(err) {
+						$('#response').val(JSON.stringify(err));
+					}
+				});
+			});
+
+			$("answerBtn").click(function() {
+				event.preventDefault();
+				$.ajax({
+					type: 'GET',
+					url: '/user/' + $("#username").val() + "/answers",
+					processData: false,
+					success: function(res) {
+						if (res.status == 'OK') {
+							$('#response').val(JSON.stringify(res.answers))
+						} else {
+							$('#response').val(JSON.stringify(res));
+						}
+					},
+					error: function(err) {
+						$('#response').val(JSON.stringify(err));
+					}
+				});
+
+            });
+
+            $("questionBtn").click(function() {
+				event.preventDefault();
+				$.ajax({
+					type: 'GET',
+					url: '/user/' + $("#username").val() + "/questions",
+					processData: false,
+					success: function(res) {
+						if (res.status == 'OK') {
+							$('#response').val(JSON.stringify(res.questions))
+						} else {
+							$('#response').val(JSON.stringify(res));
+						}
+					},
+					error: function(err) {
+						$('#response').val(JSON.stringify(err));
+					}
+				});
+
+			});
+	   </script>
+</body>
+</html>

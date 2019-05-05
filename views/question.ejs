@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Firewall's Stack OverFlow -- Post A Question</title>
+	<% include ./head.ejs %>
+</head>
+<body>
+	<% include ./navbar.ejs %><hr>
+	<div class="container">
+		<h3 style="text-align: center;"> Stack OverFlow's Questions </h3>
+		<ul class="list-group" style="padding:2% 1% 0 1%">
+			<li class="list-group-item list-group-header">Post A New Question </li>
+			<li class="list-group-item list-body">
+				<form id="addQuestion">
+                    <div class="form-group">
+                        <label for="question_title"  class="btn btn-secondary">Question's Title:</label>
+                        <input type="text" class="form-control" id="question_title" placeholder="Type the title of a new question" name="question_title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="question_body"  class="btn btn-secondary">Question's Body:</label>
+                        <input type="text" class="form-control" id="question_body" placeholder="Type the body of a new question" name="question_body" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="question_tags"  class="btn btn-secondary">Question's Tags:</label>
+                        <input type="text" class="form-control" id="question_tags" placeholder="Type the Tags of a new question( seperated by spaces)" name="question_tags" required>
+                    </div>
+					<div class="form-group">
+						<label for="question_media" class="btn btn-secondary">Media IDs: </label>
+						<input type="text" class="form-control" id="question_media" name="question_media" placeholder="Multi IDs should be seperated by spaces"></input>
+					</div>
+
+					<button type="submit" class="btn btn-success btn" style="margin-left: 45%"> <i class="fas fa-search-plus"></i> Post Question </button>
+                </form>
+            </li>
+		</ul><br>
+    </div>
+    <script type="text/javascript">
+       $("#addQuestion").submit(function(event){
+            event.preventDefault();
+            var tags = $('#question_tags').val().split(' ');
+            var media = [];
+            if($('#question_media').val())
+                media = $('#question_media').val().split(' ');
+         $.ajax({
+       	    type: 'POST',
+       	    url: '/questions/add',
+       	    dataType: 'json',
+       	    data: JSON.stringify({
+          	    title: $("#question_title").val(),
+          	    body: $("#question_body").val(),
+          	    tags: tags,
+         	    media: media  // Optional
+         }),
+        contentType: 'application/json',
+        processData: false,
+        success: function (res) {
+            if(res.status=='OK'){
+                alert('Post a new question successfully!');
+                window.location.href = 'http://130.245.171.156/';
+            }else{
+                alert(JSON.stringify(res));
+            }
+          },
+        error: function (err) { 
+            alert(JSON.stringify(err));
+         }
+        });
+    });
+   </script>
+</body>
+</html>

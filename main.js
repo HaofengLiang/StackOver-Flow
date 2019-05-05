@@ -22,13 +22,19 @@ const logger = winston.createLogger({
 });
 const sendmail = require('sendmail')({silent: true});
 const port = process.env.PORT || 3000;
-
 /**************************************************** Global Parameters *****************************/
 const OK = {status: 'OK'};
 const loginStatus = {status: 'error', error: "Need Login"}
 var mailOptions = {from: 'testcse311@gmail.com', to:  '', text: 'validation key:<'+backdoor+'>'}
-
-
+/*********************************Basic Configuration **********************************************/
+app.use(compression()) // gzip
+app.use(bodyParser.json({ extended: true})); // to support JSON-encoded bodies
+app.use(bodyParser.urlencoded({  extended: true }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public'))); // for static files, like css, images
+app.set('view engine', 'ejs'); // for rendering html files in ejs format
+app.set('views', './views');
+app.set('trust proxy');// for getting ip for couting views for questions
 /************************************************ DB ***********************************/
 mongoose.Promise = global.Promise;
 mongoose.connect('mongodb://130.245.170.235:27017/firewall', { useNewUrlParser: true, useCreateIndex: true, useFindAndModify: false }).catch(err=> {
@@ -37,24 +43,10 @@ mongoose.connect('mongodb://130.245.170.235:27017/firewall', { useNewUrlParser: 
 const elasticClient = new elasticsearch.Client({ host: 'localhost:9200'}, function(err, conn){
       if(err){return res.status(400).json({status:'error', error: err})}
 });
-memcached.connect('127.0.0.1:11211', function (err, conn) { // conenct memecacehd
-   if (err) { return res.status(400).json({status:'error', error: err}) }
-  });
 const client = new cassandra.Client({ contactPoints: ['192.168.122.32'], localDataCenter: 'datacenter1', keySpace: 'media' });
 client.connect(function(err, result) {
     if (err) { return res.status(400).json({status:'error', error: err}) }
 });
-
-
-/*************** Basic Configuration ********************************************************************************* */
-app.use(compression()) // gzip
-app.use(bodyParser.json({limit: '30mb', extended: true})); // to support JSON-encoded bodies
-app.use(bodyParser.urlencoded({ limit: '30mb', extended: true }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public'))); // for static files, like css, images
-app.set('view engine', 'ejs'); // for rendering html files in ejs format
-app.set('views', './views');
-app.set('trust proxy');// for getting ip for couting views for questions
 /*********************************** DB--- Schema ************************************/
 const userSchema = new mongoose.Schema({ //Create & Define a schema for 'User'
     id: { type: String, required: true, unique: true, default: shortId.generate },
@@ -76,7 +68,7 @@ const answerSchema = new mongoose.Schema({ //Create & Define a schema for 'Answe
     downvote: [ { type: String } ], // username
     is_accepted: { type: Boolean, default: false },
     timestamp: { type: Number, default: unixTime(new Date()) },
-    media: [ { type: String } ] // media ID (array) 
+    media: [ { type: String } ] // media ID (array)
 })
 const Answer = mongoose.model('Answer', answerSchema) // Create Answer module for the created schema
 
@@ -106,20 +98,18 @@ const questionSchema = new mongoose.Schema({ // Create & Define a schema for 'Qu
   });
 const Question = mongoose.model('Question', questionSchema)// Create Question module for the created schema
 
-
-/**************************************************** ROUTES ************************************/
+/**************************************************** ROUTES *******************************************/
 app.get(['/','/index'], function (req, res) {
   var user = req.cookies['userSession'];
   return res.render('index.ejs', {user: user});
  })
-
 app.post('/adduser', function (req, res) {
   logger.info("Entering '/adduser' " + req.body.username);
   mailOptions.to = req.body.email;
-  // sendmail(mailOptions, function(err, reply) {
-  //   if(err)
-  //     logger.error("Mail failed",err);
-  // });
+  sendmail(mailOptions, function(err, reply) {
+    if(err)
+      logger.error("Mail failed",err);
+  });
   var newUser = new User({
     username: req.body.username,
     email: req.body.email,
@@ -147,10 +137,6 @@ app.post('/verify', (req, res)=>{
      return res.status(400).json({status: 'error', error: err});
    })
 })
-app.get('/login', (req, res) =>{
-  var user = req.cookies['userSession'];
-  return res.render('login.ejs', {user: user});
-})
 app.post('/login', (req, res) =>{
   logger.info("Entering 'login': "+ req.body.username);
   User.findOne({username: req.body.username, password: req.body.password, verify: true}, "_id id username reputation").then(doc=>{
@@ -164,12 +150,12 @@ app.post('/login', (req, res) =>{
        return  res.status(400).json({status:' error', error: err})
   })
 })
-app.post('/logout', async function(req, res){
+app.post('/logout', (req, res)=>{
   logger.info("Entering 'logout --> cookies: '", req.cookies['userSession']);
   res.clearCookie('userSession');
   return res.json({status:'OK'})
 })
-/************************************** Users Part*******************************************/
+/********************************************** User Parts *******************************************************/
 app.get('/user/:username', function (req, res){
   logger.info("Entering 'user/username --> username: " + req.params.username);
    User.findOne({username: req.params.username}, '-_id email reputation').then(user=>{
@@ -217,7 +203,15 @@ app.get('/user/:username/answers', async function (req, res){
       res.status(400).json({status: 'error', error: err});
   }
 })
-/***************************************** Questions Part*******************************************/
+/***************************************** Questions Part ********************************************************/
+app.get('/questions', (req, res) =>{
+  var user = req.cookies['userSession'];
+  if(user){
+      return res.render('question.ejs', {user: user});
+  }else{
+     return res.send("You need to login in firstly.  Please go back to homepage to login !");
+  }
+})
 app.post('/questions/add', async function(req, res){
   var user =  req.cookies['userSession']
   logger.info("Entering 'questions/add --> cookies: ", user);
@@ -305,68 +299,72 @@ app.delete('/questions/:id', async function(req, res){
      return res.status(401).json({status: 'error', error: "Login /questions/:id --delete "});
   }
 })
-// app.post('/questions/:id/upvote', async function(req, res){
-//   logger.info("Entering '/questions/:id/upvote--> " + req.params.id);
-//   var user = req.signedCookies['username'];
-//   if(user){
-//       var upvote = req.body.upvote;
-//       if(upvote == null)
-//             return res.status(400).json({status: 'error', error: "No upvote value"});
-//       var flag = false;
-//       var value;
-//       Question.findOne({id: req.params.id}).populate('user').then(doc=>{
-//         if(doc == null)
-//               return res.status(404).json({status: 'error', error: "Invalid question id"});
-//         else{
-//           if(upvote){
-//               var index = (doc.upvote).indexOf(user.username)
-//               if(index > -1 && user.reputation > 1 ){ // recall upvote
-//                   logger.info("Recall upvote action")
-//                     flag = true;
-//                     value = -1;
-//                     (doc.upvote).splice(index, 1);
-//               }else if(index < 0){ // do 'upvote'
-//                   logger.info("upvote action")
-//                     flag = true;
-//                     value = 1;
-//                     (doc.upvote).push(user.username);
-//               }
-//           }else{
-//             var index = (doc.downvote).indexOf(user.username)
-//             if(index > -1 ){ // recall 'downvote'
-//               logger.info("Recall downvote action")
-//                     flag = true;
-//                     value = 1;
-//                   (doc.downvote).splice(index, 1);
-//             }else if(index < 0 && user.reputation > 1){ // do 'downvote'
-//                 logger.info("downvote action")
-//                     flag = true;
-//                     value = -1;
-//                   (doc.downvote).push(user.username);
-//             }
-//           }
-//           if(flag){
-//                 doc.save().catch(err=>{
-//                       logger.info("Save Question Error: "+ JSON.stringify(err));
-//                 })
-//                 User.updateOne({$inc: {reputation: flag}}).catch(err=>{
-//                   logger.info("Update user repputation error: "+ JSON.stringify(err));
-//                 })
-//             }
-//             return res.status({status: 'OK'});
-//           }
-//         }).catch(err=>{
-//           return res.status(400).json({status: 'error', error: JSON.stringify(err)});
-//         })
-//   }else{
-//       return res.status(401).json("You need to login firstly to upvote a question! ");
-//   }
-// })
+app.post('/questions/:id/upvote', async function(req, res){
+  logger.info("Entering '/questions/:id/upvote--> " + req.params.id);
+  var user = req.signedCookies['username'];
+  if(user){
+      var upvote = req.body.upvote;
+      if(upvote == null)
+            return res.status(400).json({status: 'error', error: "No upvote value"});
+      var flag = false;
+      var value;
+      Question.findOne({id: req.params.id}).populate('user').then(doc=>{
+        if(doc == null)
+              return res.status(404).json({status: 'error', error: "Invalid question id"});
+        else{
+          if(upvote){
+              var index = (doc.upvote).indexOf(user.username)
+              if(index > -1 && user.reputation > 1 ){ // recall upvote
+                  logger.info("Recall upvote action")
+                    flag = true;
+                    value = -1;
+                    (doc.upvote).splice(index, 1);
+              }else if(index < 0){ // do 'upvote'
+                  logger.info("upvote action")
+                    flag = true;
+                    value = 1;
+                    (doc.upvote).push(user.username);
+              }
+          }else{
+            var index = (doc.downvote).indexOf(user.username)
+            if(index > -1 ){ // recall 'downvote'
+              logger.info("Recall downvote action")
+                    flag = true;
+                    value = 1;
+                  (doc.downvote).splice(index, 1);
+            }else if(index < 0 && user.reputation > 1){ // do 'downvote'
+                logger.info("downvote action")
+                    flag = true;
+                    value = -1;
+                  (doc.downvote).push(user.username);
+            }
+          }
+          if(flag){
+                doc.save().catch(err=>{
+                      logger.info("Save Question Error: "+ JSON.stringify(err));
+                })
+                User.updateOne({$inc: {reputation: flag}}).catch(err=>{
+                  logger.info("Update user repputation error: "+ JSON.stringify(err));
+                })
+            }
+            return res.status({status: 'OK'});
+          }
+        }).catch(err=>{
+          return res.status(400).json({status: 'error', error: JSON.stringify(err)});
+        })
+  }else{
+      return res.status(401).json("You need to login firstly to upvote a question! ");
+  }
+})
 
 // // app.get('/search', function(req, res){
 
 // // })
-/******************************* Answer Parts *************************/
+/************************************** Answer Parts ************************************/
+app.get('/answers', (req, res) =>{
+  var user = req.cookies['userSession'];
+  return res.render('answer.ejs', {user: user});
+})
 app.post('/questions/:id/answers/add', async function(req, res){
   var user =  req.cookies['userSession']
   logger.info("Entering /questions/:id/answers/add --> id: "+ req.params.id);
@@ -525,7 +523,12 @@ app.post('/answers/:id/accept', async function(req,res){
 //       return res.status(401).json("You need to login firstly to upvote a answer! ");
 //   }
 // })
-/********************************** Media Parts */
+/********************************** Media Parts*****************************/
+app.get('/media', (req, res)=>{
+  logger.info("here")
+  var user = req.cookies['userSession'];
+  return res.render('media.ejs', {user: user});
+})
 app.post('/addmedia', (req, res)=>{
   var user = req.cookies['userSession']
   logger.info("Entering 'addmedia -- cookies: ", user);
@@ -537,9 +540,9 @@ app.post('/addmedia', (req, res)=>{
               return res.status(400).json({status:'error', error: 'Empty File ' + err});
           }else{
             mediaID = shortId.generate();
-            fs.readFile(content.path, function(err, data){
+            fs.readFile(content.path, async function(err, data){
               var query = "insert into media.bigfile (id, filename, poster, flag, extension, content) values (?,?,?,?,?,?);";
-              client.execute(query, [mediaID, content.name, user.username, 0, content.type, data], {prepare: true}).catch(err=>{
+              await client.execute(query, [mediaID, content.name, user.username, 0, content.type, data], {prepare: true}).catch(err=>{
                   logger.error("Add media failed: ", err); // tricky part
             })
                return res.json({status: 'OK', id: mediaID});
@@ -552,14 +555,14 @@ app.post('/addmedia', (req, res)=>{
 })
 app.get('/media/:id', (req, res)=>{
     var mediaID = req.params.id;
-    logger.info("Entering 'media/:id -- id: ", mediaID);
+    logger.info("Entering 'media/:id -- id: " + mediaID);
     var query = 'select extension, content from media.bigfile where id = ?;';
     client.execute(query, [req.params.id], {prepare: true}).then(doc=>{
       if(doc.first() == null){
         return res.status(404).json({status: 'error', error: "did not find media file"});
       }else{
         res.setHeader('Content-Type', doc.first().extension);
-        return res.send(doc.first().content);
+        return res.send((doc.first().content).toString('base64'));
       }
     }).catch(err=>{
       return res.status(400).json({status: 'error', error: err});

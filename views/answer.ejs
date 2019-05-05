@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Firewall's Stack OverFlow  -- Answer Management </title>
+  <% include ./head.ejs %>
+</head>
+<body>
+  <% include ./navbar.ejs %> <br>
+  <div class="container">
+    <div>
+        <button class="btn btn-info btn-block" style="font-weight: bold" onclick="window.location.href='http://130.245.171.156/media'"> <i class="fas fa-film"></i> Go To Media Center </button>
+        <button class="btn btn-info btn-block" style="font-weight: bold" onclick="window.location.href='http://130.245.171.156/user'"> <i class="fas fa-users"></i> Go To User Center </button>
+    </div><hr>
+    <% if (user) { %>
+        <h3 style="text-align: center;"> Stack OverFlow's Answer <button  href="#addModule" class="btn btn-success" style="margin-left:8%;" data-toggle="modal"><i class="far fa-plus-square"></i> Post An Answer</button></h3>
+    <% } else { %>
+        <h3 style="text-align: center;"> Stack OverFlow's Answer <button class="btn btn-success btn" style="margin-left:5%;" disabled><i class="far fa-plus-square"></i>Post An Answer</button></h3>
+    <% } %>
+    <ul class="list-group" style="padding:0 1% 0 1%">
+		<li class="list-group-item list-group-header">Basic Ops about Answer </li>
+			<li class="list-group-item list-body">
+				<form>
+					<div class="form-group">
+						<label for="answer_id" class="btn btn-secondary">Enter Answer ID: </label>
+						<input type="text" class="form-control" id="answer_id" name="answer_id" placeholder="Example: answerExample " required></input>
+					</div>
+				 <div style="margin-left: 15% " >
+						<button type="submit" class="btn btn-success btn-sm" id="getBtn"> <i class="far fa-plus-square"></i> Get Answer </button>
+                        <% if(user) { %>
+                        <button type="submit" class="btn btn-success btn-sm" style="margin-left: 1%" id="acceptBtn"> <i class="far fa-plus-square"></i> Accept Answer </button>
+						<button type="submit" class="btn btn-success btn-sm" style="margin-left: 1%" id="upvoteBtn"> <i class="fas fa-thumbs-up"></i> Upvote Answer </button>
+						<button type="submit" class="btn btn-success btn-sm" style="margin-left: 1%" id="downBtn"> <i class="fas fa-thumbs-down"></i> Downvote Answer </button>
+                        <% } else { %>
+                         <label class="btn btn-warning">Login to get more operations about answers </label>
+                        <% } %>
+				 </div>
+                </form>
+            </li>
+    </ul><br>
+    <ul class="list-group" style="padding:0 1% 0 1%">
+            <li class="list-group-item list-group-header"> Answer Results: </li>
+            <li class="list-group-item list-body">
+                <textarea class="form-control form-rounded" rows="5" id='response'>You do not get results currently !</textarea>
+            </li>
+    </ul><br>
+  </div>
+  <div id="addModule" class="modal fade">
+        <div class="modal-dialog modal-login">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Add An Answer</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="addAnswer">
+                        <div class="form-group">
+                            <label for="question_id"  class="btn btn-secondary">Question's ID:</label>
+                            <input type="text" class="form-control" id="question_id" placeholder="Question ID " name="question_id" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="answer_body"  class="btn btn-secondary">Answer's Body:</label>
+                            <input type="text" class="form-control" id="answer_body" placeholder="Type the body of a new answer" name="answer_body" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="answer_media" class="btn btn-secondary">Media IDs: </label>
+                            <input type="text" class="form-control" id="answer_media" name="answer_media" placeholder="Multi IDs should be seperated by spaces"></input>
+                     </div>
+                    <button type="submit" class="btn btn-lg btn-block login-btn"> <i class="fas fa-search-plus"></i> Post An Answer </button>
+                 </form>
+                </div>
+            </div>
+        </div>
+</div>
+  <script type="text/javascript">
+     $("#addAnswer").submit(function(event){
+        event.preventDefault();
+       var media = [];
+       var temp_media = $('#answer_media').val()
+       if(temp_media && temp_media.length > 0)
+            media = temp_media.split(' '); // get media array
+        $.ajax({
+            type: 'POST',
+            url: '/questions/'+$('#question_id').val()+'/answers/add',
+            dataType: 'json',
+            data: JSON.stringify({
+                 body: $("#answer_body").val(),
+                 media: media  // Optional
+            }),
+            contentType: 'application/json',
+            success: function (res) {
+                $('#response').val("");
+                if(res.status == 'OK'){
+                    alert("Post an answer successfully: " + res.id);
+                }else{
+                    $('#response').val(JSON.stringify(res));
+                }
+            },
+            error: function (err) {
+                $('#response').val(JSON.stringify(err));
+            }
+     });
+  });
+    $("#getBtn").submit(function(event){
+        event.preventDefault();
+        $.ajax({
+            type: 'GET',
+            url: '/answers/'+$('#answer_id').val(),
+            processData: false,
+            success: function (res) {
+                if(res.status == 'OK'){
+                    $('#response').val(JSON.stringify(res.answer));
+                }else {
+                    $('#response').val(JSON.stringify(res));
+            }
+        },
+        error: function (err) {
+            $('#response').val(JSON.stringify(err));
+        }
+        });
+    });
+    $("#acceptBtn").submit(function(event){
+         event.preventDefault();
+        $.ajax({
+            type: 'POST',
+            url: '/answers/'+ $('#answer_id').val()+'/accept',
+            processData: false,
+            success: function (res) {
+                $('#response').val("");
+                if(res.status == 'OK'){
+                    alert("Accept An answer successfully");
+            }else {
+                $('#response').val(JSON.stringify(res));
+         }
+       },
+       error: function (err) {
+                 $('#response').val(JSON.stringify(err));
+            }
+        });
+    });
+        $("upvoteBtn").click(function() {
+				event.preventDefault();
+				$.ajax({
+					type: 'POST',
+					url: '/answers/' + $('#answer_id').val() + "/upvote",
+					dataType: 'json',
+					data: JSON.stringify({
+						upvote: true
+					}),
+					contentType: 'application/json',
+					success: function(res) {
+                        $('#response').val("");
+						if (res.status == 'OK') {
+							alert("Pass Upvote Action: " + $('#answer_id').val())
+						} else {
+							$('#response').val(JSON.stringify(res));
+						}
+					},
+					error: function(err) {
+                        $('#response').val(JSON.stringify(err));
+                    }
+			});
+        });
+		$("downBtn").click(function() {
+				event.preventDefault();
+				$.ajax({
+					type: 'POST',
+					url: '/answers/' + $("#answer_id").val() + "/downvote",
+					dataType: 'json',
+					data: JSON.stringify({
+						upvote: false
+					}),
+					contentType: 'application/json',
+					success: function(res) {
+                        $('#response').val(" ");
+						if (res.status == 'OK') {
+							alert("Pass Downvote Action: " + $('#response').val(""))
+						} else {
+							$('#response').val(JSON.stringify(res));
+						}
+					},
+					error: function(err) {
+                        $('#response').val(JSON.stringify(err));
+					}
+				});
+            });
+    </script>
+</body>
+</html>

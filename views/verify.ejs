@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>StackOver Flow Clone --- -- Email Verification</title>
+    <title>Firewall's Stack OverFlow -- Email Verification</title>
   <% include ./head.ejs %>
 </head>
 <body>
-  <% include ./navbar.ejs %>
+  <% include ./navbar.ejs %><hr><br>
 <div class="container">
   <h3 style="text-align: center;"> Stack OverFlow's Questions </h3>
   <ul class="list-group" style="padding:0 1% 0 1%">
@@ -20,15 +20,15 @@
                 <label for="key"  class="btn btn-secondary">Key:</label>
                 <input type="text" class="form-control" id="key" placeholder="Enter your key" name="key" required>
               </div>
-              <button type="submit" class="btn btn-primary" style="margin-left: 40%">Verify Your Account</button>
+              <button type="submit" class="btn btn-success" style="margin-left: 40%">Verify Your Account</button>
           </form>
+        </li>
 		</ul><br>
 </div>
 
 ​<script type="text/javascript">
    $("#verify").submit(function(event){
         event.preventDefault();
-      // Ajax Post Call
       $.ajax({
         type: 'POST',
         url: '/verify',
@@ -39,10 +39,13 @@
         }),
         contentType: 'application/json',
         success: function (res) {
-          $('#show_info').val(res);
+          if(res.status = 'OK')
+            window.location.href = 'http://130.245.171.156/';
+          else
+            alert(JSON.stringify(res))
         },
-        error: function (res) {
-          $('#show_info').val(res);
+        error: function (err) {
+            alert(JSON.stringify(err))
         }
       });
    });
