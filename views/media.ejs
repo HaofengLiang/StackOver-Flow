@@ -55,7 +55,7 @@
         success: function(res){
           if(res.status=='OK'){
             alert("Add Media Successfully! Media ID is: " + res.id);
-            window.location.href = 'http://130.245.171.156/media';
+            window.location.href = '/media';
           }
           else{
             alert(JSON.stringify(res));
