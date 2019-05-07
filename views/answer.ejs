@@ -25,7 +25,11 @@
 						<input type="text" class="form-control" id="answer_id" name="answer_id" placeholder="Example: answerExample " required></input>
 					</div>
 				 <div style="margin-left: 15% " >
+<<<<<<< HEAD
 						<!-- <button type="submit" class="btn btn-success btn-sm" id="getBtn"> <i class="far fa-plus-square"></i> Get Answer </button> -->
+=======
+						<button type="submit" class="btn btn-success btn-sm" id="getBtn"> <i class="far fa-plus-square"></i> Get Answer </button>
+>>>>>>> 806f9beae9d6b331ad95029f9600ab2b3512c824
                         <% if(user) { %>
                         <button type="submit" class="btn btn-success btn-sm" style="margin-left: 1%" id="acceptBtn"> <i class="far fa-plus-square"></i> Accept Answer </button>
 						<button type="submit" class="btn btn-success btn-sm" style="margin-left: 1%" id="upvoteBtn"> <i class="fas fa-thumbs-up"></i> Upvote Answer </button>
@@ -72,7 +76,11 @@
         </div>
 </div>
   <script type="text/javascript">
+<<<<<<< HEAD
      $("#addAnswer").submit(function(){
+=======
+     $("#addAnswer").submit(function(event){
+>>>>>>> 806f9beae9d6b331ad95029f9600ab2b3512c824
         event.preventDefault();
        var media = [];
        var temp_media = $('#answer_media').val()
@@ -100,6 +108,7 @@
             }
      });
   });
+<<<<<<< HEAD
     // $("#getBtn").click(function(event){
     //     event.preventDefault();
     //     $.ajax({
@@ -119,6 +128,27 @@
     //     });
     // });
     $("#acceptBtn").submit(function(){
+=======
+    $("#getBtn").submit(function(event){
+        event.preventDefault();
+        $.ajax({
+            type: 'GET',
+            url: '/answers/'+$('#answer_id').val(),
+            processData: false,
+            success: function (res) {
+                if(res.status == 'OK'){
+                    $('#response').val(JSON.stringify(res.answer));
+                }else {
+                    $('#response').val(JSON.stringify(res));
+            }
+        },
+        error: function (err) {
+            $('#response').val(JSON.stringify(err));
+        }
+        });
+    });
+    $("#acceptBtn").submit(function(event){
+>>>>>>> 806f9beae9d6b331ad95029f9600ab2b3512c824
          event.preventDefault();
         $.ajax({
             type: 'POST',
@@ -137,7 +167,11 @@
             }
         });
     });
+<<<<<<< HEAD
         $("#upvoteBtn").click(function() {
+=======
+        $("upvoteBtn").click(function() {
+>>>>>>> 806f9beae9d6b331ad95029f9600ab2b3512c824
 				event.preventDefault();
 				$.ajax({
 					type: 'POST',
@@ -160,7 +194,11 @@
                     }
 			});
         });
+<<<<<<< HEAD
 		$("#downBtn").click(function() {
+=======
+		$("downBtn").click(function() {
+>>>>>>> 806f9beae9d6b331ad95029f9600ab2b3512c824
 				event.preventDefault();
 				$.ajax({
 					type: 'POST',
