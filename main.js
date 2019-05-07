@@ -4,6 +4,7 @@ const path = require('path') // for serving static files lately
 const compression = require('compression') // can greately decrease the size of the response body, and hence increase the sepeed of a web app
 const cassandra = require('cassandra-driver');
 const mongoose = require('mongoose');
+const elasticsearch = require('elasticsearch');
 const cookieParser = require('cookie-parser');
 const unixTime = require('unix-time');
 const shortId = require('shortid');
@@ -18,10 +19,6 @@ const logger = winston.createLogger({
 });
 const sendmail = require('sendmail')({silent: true});
 const port = process.env.PORT || 3000;
-/**************************************************** Global Parameters *****************************/
-const OK = {status: 'OK'};
-const loginStatus = {status: 'error', error: "Need Login"}
-var mailOptions = {from: 'testcse311@gmail.com', to:  '', text: 'validation key:<'+backdoor+'>'}
 /*********************************Basic Configuration **********************************************/
 app.use(compression()) // gzip
 app.use(bodyParser.json({ extended: true})); // to support JSON-encoded bodies
@@ -33,13 +30,19 @@ app.set('views', './views');
 app.set('trust proxy');// for getting ip for couting views for questions
 /************************************************ DB ***********************************/
 mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://130.245.170.235:27017/firewall', { useNewUrlParser: true, useCreateIndex: true, useFindAndModify: false }).catch(err=> {
-  if (err) { return res.status(400).json({status:'error', error: err}) }
+mongoose.connect('mongodb://192.168.122.41:27017/firewall', { useNewUrlParser: true, useCreateIndex: true, useFindAndModify: false }).catch(err=> {
+  if (err) { return logger.error("MongoDB connection Faield", err) }
 });
-
 const client = new cassandra.Client({ contactPoints: ['192.168.122.32'], localDataCenter: 'datacenter1', keySpace: 'media' });
 client.connect(function(err, result) {
-    if (err) { return res.status(400).json({status:'error', error: err}) }
+    if (err) {  return logger.error("cassandra connection Faield", err) }
+});
+const elasticClient = new elasticsearch.Client({ host: '192.168.122.41:9200'}, function(err, conn){
+  if(err){ return logger.error("elasticClient  connection Faield", err)}
+});
+elasticClient.ping({// Send a HEAD request to / and allow up to 1 second for it to complete.
+  requestTimeout: 1000  // ping usually has a 3000ms timeout
+}, function (error) {if (error) logger.error('elasticsearch cluster is down!');
 });
 /*********************************** DB--- Schema ************************************/
 const userSchema = new mongoose.Schema({ //Create & Define a schema for 'User'
@@ -82,6 +85,11 @@ const questionSchema = new mongoose.Schema({ // Create & Define a schema for 'Qu
     accepted_answer: { type: String, require: true, default: null}
   });
 const Question = mongoose.model('Question', questionSchema)// Create Question module for the created schema
+/**************************************************** Global Parameters *****************************/
+const OK = {status: 'OK'};
+const loginStatus = {status: 'error', error: "Need Login"}
+var mailOptions = {from: 'testcse311@gmail.com', to:  '', text: 'validation key:<'+backdoor+'>'}
+
 /**************************************************** ROUTES *******************************************/
 app.get(['/','/index'], function (req, res) {
   var user = req.cookies['userSession'];
@@ -137,7 +145,7 @@ app.post('/login', (req, res) =>{
       if(doc == null)
         return res.status(404).json({status: 'error', error: 'Invalid Username: ' + req.body.username});
       else{
-        res.cookie('userSession', doc, { maxAge: 24 * 60 * 60 * 1000 * 2 } );
+        res.cookie('userSession', doc, { maxAge: 24 * 60 * 60 * 1000  } );
         return res.json(OK);
        }
   }).catch(err=>{
@@ -150,7 +158,7 @@ app.post('/logout', (req, res)=>{
   return res.json(OK);
 })
 /********************************************** User Parts *******************************************************/
-app.get('/user/:username', function (req, res){
+app.get('/user/:username', async (req, res)=>{
   var username =  req.params.username
   logger.info("Entering 'user/username: " + username);
    User.findOne({username: username}, '-_id email reputation').then(user=>{
@@ -168,7 +176,7 @@ app.get('/user/:username/questions', async function (req, res){
         var user =  User.findOne({username: username}, '_id')
         var [user, questions] = await Promise.all([
            User.findOne({username: username}, '_id'),
-           Question.find({'username': username})
+           Question.find({username: username}, '-_id id')
         ])
       if(user == null ){
           res.status(404).json({status: 'error', error: "Invalid Username: " + username})
@@ -187,7 +195,7 @@ app.get('/user/:username/answers', async function (req, res){
   try{
       var [user, answers] = await Promise.all([
           User.findOne({username:username}, '_id'),
-          Answer.find({"username": username}, '_id id')
+          Answer.find({username: username}, '-_id id')
       ])
       if(user == null ){
           res.status(404).json({status: 'error', error: "Invalid Username: " + username})
@@ -340,23 +348,113 @@ app.post('/questions/:id/upvote', async function(req, res){
                   logger.info("Update user repputation error: ", err);
                 })
             }
-            return res.status(OK);
+            return res.json(OK);
           }
         }).catch(err=>{
-          return res.status(400).json({status: 'error', error: JSON.stringify(err)});
+          return res.status(400).json({status: 'error', error: err});
         })
   }else{
       return res.status(401).json(loginStatus);
   }
 })
+// app.post('/search',(req, res)=>{
+//   var body = { 'timestamp': null, 'limit': null, 'sort_by': null, 'has_media': null, 'accepted': null, 'query': null, 'tags': null };
+//   if (req.body) {
+//       body.timestamp = req.body.timestamp // number
+//       body.limit = req.body.limit // number  >=25 && <=100
+//       body.sort_by = req.body.sort_by // string, default---> score
+//       body.has_media = req.body.has_media // boolean, default ---> false
+//       body.accepted = req.body.accepted // boolean, default ---> false
+//       body.query = req.body.q // string, support space
+//       body.tags = req.body.tags // array
+//   }
+//   // check constains and assign default values
+//   if (body.timestamp== null) { body.timestamp = unixTime(new Date()) }
+//   if (body.limit == null) { body.limit = 25 }
+//   if (body.limit > 100) { return res.status(400).json({ status: 'error', error: 'limit should be less than 100' }) }
+//   if (body.sort_by == null || body.sort_by == 'score')
+//        body.sort_by = {'score': {'order': 'desc'}}
+//   else
+//      body.sort_by = {'timestamp': {'order': 'desc'}}
+//   if (body.has_media == null) { body.has_media = false }
+//   if (body.accepted == null) { body.accepted = false }
+//   logger.info('Search Limitions: ', body)
+//   var sort = {'timestamp': {'order': 'desc'}}
+//   i
+//   var body ={
+//     "sort":{
+//         bodysort_by: {"order": "descr"}
+//       },
+//     query: {
+//       query_string : {
+//           default_field : 'id',
+//           query : username
+//       }
+//     }
+//   }
 
-// // app.get('/search', function(req, res){
+//   Question.find({}).populate('user').exec(function (err, docs) {
+//     if (err) {
+//       res.status(400).send({ status: 'error', error: err })
+//     } else {
+//       var all_questions = docs
 
-// // })
+//       console.log('all_questions: %d\n', all_questions.length)
+//       // filter by timestamp --> search questions from this time and earlier
+//       all_questions = all_questions.filter(question => (question.timestamp <= timestamp))
+//       console.log('after filtering by timestamp, questions---->%d\n', all_questions.length)
+//       // filter by has_media
+//       if (has_media) { all_questions = all_questions.filter(question => (question.media.length > 0)) }
+//       console.log('after filtering by has_media, questions---->%d\n', all_questions.length)
+//       // filter by accepted
+//       if (accepted) { all_questions = all_questions.filter(question => (question.accepted_answer != null)) }
+//       console.log('after filtering by accepted, questions---->%d\n', all_questions.length)
+//       // filter by tags
+//       if (tags && tags.length > 0) {
+//         all_qestions = all_questions.filter(question => ((question.tags).every(ele => tags.indexOf(ele) > -1)))
+//         console.log('after filtering by tags, questions---->%d\n', all_questions.length)
+//       }
+//       // filter by query
+//       if (query && query.length > 0) {
+//         query = query.toLowerCase()
+//         var words = query.split(' ')
+//         console.log('query words--->%s\n', JSON.stringify(words))
+//         // for (var i = 0; i < all_questions.length; i++) {
+//         //   console.log(all_questions[i].title + ' ' + all_questions[i].title.split(' ').some(ele => words.indexOf(ele) >= 0))
+//         //   console.log(all_questions[i].body + ' ' + all_questions[i].body.split(' ').some(ele => words.indexOf(ele) >= 0))
+//         // }
+//         all_questions = all_questions.filter(question => (question.title.toLowerCase().split(' ').some(ele => words.indexOf(ele) >= 0) || question.body.toLowerCase().split(' ').some(ele => words.indexOf(ele) >= 0)))
+//         console.log('after filtering by query, questions---->%s\n', JSON.stringify(all_questions))
+//       }
+//       if (all_questions.length > 0) {
+//         if (sort_by == 'score') {
+//           all_questions.sort((a, b) => ((a.upvote.length - a.downvote.length) - (b.upvote.length - b.downvote.length)))
+//         } else {
+//           all_questions.sort((a, b) => ((a.timestamp - b.timestamp)))
+//         }
+//         console.log('after sorting, questions---->%d\n', all_questions.length)
+//       }
+//       if (all_questions.length >= limit) {
+//         all_questions = all_questions.slice(0, limit)
+//         console.log('after slicing an array, questions---->%s\n', JSON.stringify(all_questions))
+//       }
+//       var return_questions = []
+//       for (var i = 0; i < all_questions.length; i++) {
+//         var ele = all_questions[i]
+//         var score = (ele.upvote.length - ele.downvote.length)
+//         var question = { id: ele.id, user: { username: ele.user.username, reputation: ele.user.reputation }, title: ele.title, body: ele.body, score: score, view_count: ele.viewers.length, answer_count: ele.answers.length, timestamp: ele.timestamp, media: ele.media, tags: ele.tags, accepted_answer_id: ele.accepted_answer }
+//         console.log('question------> %s\n', JSON.stringify(question))
+//         return_questions.push(question)
+//       }
+//       res.json({ status: 'OK', questions: return_questions })
+//     }
+//   })
+// })
 /************************************** Answer Parts ************************************/
 app.post('/questions/:id/answers/add', async function(req, res){
   var user =  req.cookies['userSession']
-  logger.info("Entering /questions/:id/answers/add: "+ req.params.id);
+  var id = req.params.id
+  logger.info("Entering /questions/:id/answers/add: "+ id);
   if(user){
       var media =[];
       if(req.body.media)
@@ -368,17 +466,18 @@ app.post('/questions/:id/answers/add', async function(req, res){
           if(media.length > 0){
               [docs, questionObj] = await Promise.all([
                  client.execute(query, [media, 0, user.username], {prepare: true}),
-                 Question.findOne({id: req.params.id})
-              ])
+                Question.findOne({id: id})
+            ])
+            logger.info("QuestionObj", questionObj);
               var rowLen = docs.rowLength;
               if(rowLen == 0 ||  rowLen != media.length){
                 return res.status(400).json({status: 'error', error: "Invalid Media" + JSON.stringify(media)});
               }
             }else{
-                questionObj = await Question.findOne({id: req.params.id});
+                questionObj = await Question.findOne({id: id});
             }
             if(questionObj == null){
-              return res.status(400).json({status: 'error', error: "Invalid Question ID: " + req.params.id});
+              return res.status(400).json({status: 'error', error: "Invalid Question ID: " +id});
             }
 
             var newAsnwer  = new Answer({
@@ -389,7 +488,7 @@ app.post('/questions/:id/answers/add', async function(req, res){
             })
             newAsnwer.save().catch(err=>{
               logger.error("save new answer failed: " , err )
-            }) 
+            })
             questionObj.answers.push(newAsnwer.id);
             questionObj.save().catch(err=>{
               logger.error("Update question in adding answer: " , err )
@@ -439,7 +538,7 @@ app.post('/answers/:id/accept', async function(req,res){
     try{
        var [answer, question] = await Promise.all([
          Answer.findOne({id: id}),
-         Question.findOne({username: user.username, asnwers: { "$in" : [id]} })
+         Question.findOne({username: username, asnwers: { "$in" : [id]} })
        ])
        if(answer == null || answer.is_accepted || question == null || question.accepted_answer != null){
           return res.status(400).json({status: 'error', error: "already accepted or null answer/question!"})
@@ -454,7 +553,7 @@ app.post('/answers/:id/accept', async function(req,res){
       return res.status(400).json({status: 'error', error: err});
     }
   }else{
-    return res.status(401).json(loginStatus );
+    return res.status(401).json(loginStatus);
   }
 })
 app.post('/answers/:id/upvote', async function(req, res){
@@ -504,7 +603,7 @@ app.post('/answers/:id/upvote', async function(req, res){
                   logger.info("Update user repputation error: ", err);
                 })
             }
-            return res.status(OK);
+            return res.json(OK);
           }
         }).catch(err=>{
           return res.status(400).json({status: 'error', error: err});
@@ -554,21 +653,18 @@ app.get('/media/:id', (req, res)=>{
     })
 })
 app.get('/flushUser', (req, res)=> {
-
   User.remove({}).catch(err=>{
     logger.info("remove user faield", err)
   })
     return res.send("Flush User DB");
 })
 app.get('/flushQuestion', (req, res) => {
-
   Question.remove({}).catch(err=>{
     logger.info("remove question faield", err)
   })
     return res.send("Flush Question DB");
 })
 app.get('/flushAnswer', (req, res) => {
-
   Answer.remove({}).catch(err=>{
     logger.info("remove answer faield", err)
   })
