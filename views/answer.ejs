@@ -72,7 +72,7 @@
         </div>
 </div>
   <script type="text/javascript">
-     $("#addAnswer").submit(function(event){
+     $("#addAnswer").submit(function(){
         event.preventDefault();
        var media = [];
        var temp_media = $('#answer_media').val()
@@ -100,7 +100,7 @@
             }
      });
   });
-    $("#getBtn").submit(function(event){
+    $("#getBtn").click(function(event){
         event.preventDefault();
         $.ajax({
             type: 'GET',
@@ -118,7 +118,7 @@
         }
         });
     });
-    $("#acceptBtn").submit(function(event){
+    $("#acceptBtn").submit(function(){
          event.preventDefault();
         $.ajax({
             type: 'POST',
@@ -137,7 +137,7 @@
             }
         });
     });
-        $("upvoteBtn").click(function() {
+        $("#upvoteBtn").click(function() {
 				event.preventDefault();
 				$.ajax({
 					type: 'POST',
@@ -160,7 +160,7 @@
                     }
 			});
         });
-		$("downBtn").click(function() {
+		$("#downBtn").click(function() {
 				event.preventDefault();
 				$.ajax({
 					type: 'POST',
