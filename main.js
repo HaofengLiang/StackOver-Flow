@@ -393,64 +393,63 @@ app.post('/questions/:id/upvote', async function(req, res){
 //     }
 //   }
 
+//   Question.find({}).populate('user').exec(function (err, docs) {
+//     if (err) {
+//       res.status(400).send({ status: 'error', error: err })
+//     } else {
+//       var all_questions = docs
 
-  Question.find({}).populate('user').exec(function (err, docs) {
-    if (err) {
-      res.status(400).send({ status: 'error', error: err })
-    } else {
-      var all_questions = docs
-
-      console.log('all_questions: %d\n', all_questions.length)
-      // filter by timestamp --> search questions from this time and earlier
-      all_questions = all_questions.filter(question => (question.timestamp <= timestamp))
-      console.log('after filtering by timestamp, questions---->%d\n', all_questions.length)
-      // filter by has_media
-      if (has_media) { all_questions = all_questions.filter(question => (question.media.length > 0)) }
-      console.log('after filtering by has_media, questions---->%d\n', all_questions.length)
-      // filter by accepted
-      if (accepted) { all_questions = all_questions.filter(question => (question.accepted_answer != null)) }
-      console.log('after filtering by accepted, questions---->%d\n', all_questions.length)
-      // filter by tags
-      if (tags && tags.length > 0) {
-        all_qestions = all_questions.filter(question => ((question.tags).every(ele => tags.indexOf(ele) > -1)))
-        console.log('after filtering by tags, questions---->%d\n', all_questions.length)
-      }
-      // filter by query
-      if (query && query.length > 0) {
-        query = query.toLowerCase()
-        var words = query.split(' ')
-        console.log('query words--->%s\n', JSON.stringify(words))
-        // for (var i = 0; i < all_questions.length; i++) {
-        //   console.log(all_questions[i].title + ' ' + all_questions[i].title.split(' ').some(ele => words.indexOf(ele) >= 0))
-        //   console.log(all_questions[i].body + ' ' + all_questions[i].body.split(' ').some(ele => words.indexOf(ele) >= 0))
-        // }
-        all_questions = all_questions.filter(question => (question.title.toLowerCase().split(' ').some(ele => words.indexOf(ele) >= 0) || question.body.toLowerCase().split(' ').some(ele => words.indexOf(ele) >= 0)))
-        console.log('after filtering by query, questions---->%s\n', JSON.stringify(all_questions))
-      }
-      if (all_questions.length > 0) {
-        if (sort_by == 'score') {
-          all_questions.sort((a, b) => ((a.upvote.length - a.downvote.length) - (b.upvote.length - b.downvote.length)))
-        } else {
-          all_questions.sort((a, b) => ((a.timestamp - b.timestamp)))
-        }
-        console.log('after sorting, questions---->%d\n', all_questions.length)
-      }
-      if (all_questions.length >= limit) {
-        all_questions = all_questions.slice(0, limit)
-        console.log('after slicing an array, questions---->%s\n', JSON.stringify(all_questions))
-      }
-      var return_questions = []
-      for (var i = 0; i < all_questions.length; i++) {
-        var ele = all_questions[i]
-        var score = (ele.upvote.length - ele.downvote.length)
-        var question = { id: ele.id, user: { username: ele.user.username, reputation: ele.user.reputation }, title: ele.title, body: ele.body, score: score, view_count: ele.viewers.length, answer_count: ele.answers.length, timestamp: ele.timestamp, media: ele.media, tags: ele.tags, accepted_answer_id: ele.accepted_answer }
-        console.log('question------> %s\n', JSON.stringify(question))
-        return_questions.push(question)
-      }
-      res.json({ status: 'OK', questions: return_questions })
-    }
-  })
-})
+//       console.log('all_questions: %d\n', all_questions.length)
+//       // filter by timestamp --> search questions from this time and earlier
+//       all_questions = all_questions.filter(question => (question.timestamp <= timestamp))
+//       console.log('after filtering by timestamp, questions---->%d\n', all_questions.length)
+//       // filter by has_media
+//       if (has_media) { all_questions = all_questions.filter(question => (question.media.length > 0)) }
+//       console.log('after filtering by has_media, questions---->%d\n', all_questions.length)
+//       // filter by accepted
+//       if (accepted) { all_questions = all_questions.filter(question => (question.accepted_answer != null)) }
+//       console.log('after filtering by accepted, questions---->%d\n', all_questions.length)
+//       // filter by tags
+//       if (tags && tags.length > 0) {
+//         all_qestions = all_questions.filter(question => ((question.tags).every(ele => tags.indexOf(ele) > -1)))
+//         console.log('after filtering by tags, questions---->%d\n', all_questions.length)
+//       }
+//       // filter by query
+//       if (query && query.length > 0) {
+//         query = query.toLowerCase()
+//         var words = query.split(' ')
+//         console.log('query words--->%s\n', JSON.stringify(words))
+//         // for (var i = 0; i < all_questions.length; i++) {
+//         //   console.log(all_questions[i].title + ' ' + all_questions[i].title.split(' ').some(ele => words.indexOf(ele) >= 0))
+//         //   console.log(all_questions[i].body + ' ' + all_questions[i].body.split(' ').some(ele => words.indexOf(ele) >= 0))
+//         // }
+//         all_questions = all_questions.filter(question => (question.title.toLowerCase().split(' ').some(ele => words.indexOf(ele) >= 0) || question.body.toLowerCase().split(' ').some(ele => words.indexOf(ele) >= 0)))
+//         console.log('after filtering by query, questions---->%s\n', JSON.stringify(all_questions))
+//       }
+//       if (all_questions.length > 0) {
+//         if (sort_by == 'score') {
+//           all_questions.sort((a, b) => ((a.upvote.length - a.downvote.length) - (b.upvote.length - b.downvote.length)))
+//         } else {
+//           all_questions.sort((a, b) => ((a.timestamp - b.timestamp)))
+//         }
+//         console.log('after sorting, questions---->%d\n', all_questions.length)
+//       }
+//       if (all_questions.length >= limit) {
+//         all_questions = all_questions.slice(0, limit)
+//         console.log('after slicing an array, questions---->%s\n', JSON.stringify(all_questions))
+//       }
+//       var return_questions = []
+//       for (var i = 0; i < all_questions.length; i++) {
+//         var ele = all_questions[i]
+//         var score = (ele.upvote.length - ele.downvote.length)
+//         var question = { id: ele.id, user: { username: ele.user.username, reputation: ele.user.reputation }, title: ele.title, body: ele.body, score: score, view_count: ele.viewers.length, answer_count: ele.answers.length, timestamp: ele.timestamp, media: ele.media, tags: ele.tags, accepted_answer_id: ele.accepted_answer }
+//         console.log('question------> %s\n', JSON.stringify(question))
+//         return_questions.push(question)
+//       }
+//       res.json({ status: 'OK', questions: return_questions })
+//     }
+//   })
+// })
 /************************************** Answer Parts ************************************/
 app.post('/questions/:id/answers/add', async function(req, res){
   var user =  req.cookies['userSession']
