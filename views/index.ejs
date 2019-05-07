@@ -140,11 +140,7 @@
 					}
 				});
 			});
-<<<<<<< HEAD
 			$("#answerBtn").click(function() {
-=======
-			$("answerBtn").click(function() {
->>>>>>> 806f9beae9d6b331ad95029f9600ab2b3512c824
 				event.preventDefault();
 				$.ajax({
 					type: 'GET',
@@ -163,7 +159,7 @@
 				});
 
 			});
-			$('#searchQuestion').submit(function(event){
+			$('#searchQuestions').submit(function(event){
 				event.preventDefault();
 				var timestamp = Math.round(new Date() / 1000);
 				var limit = $('#question_limit').val()
@@ -171,6 +167,7 @@
 				var queryStr= $('#question_q').val()
 				var sort_by = $('#question_sort').val()
 				var accepted_answer = $('question_hasAnswer').val()
+				console.log("question_hasAnswer : " + accepted_answer);
 				var has_media = $('question_hasMedia').val()
 				var temp_tags =$('#question_tags').val();
 				timestamp = $('#question_timestamp').val() // number ; default: current time
@@ -238,11 +235,7 @@
 			});
 
 
-<<<<<<< HEAD
 			$("#upvoteBtn").click(function() {
-=======
-			$("upvoteBtn").click(function() {
->>>>>>> 806f9beae9d6b331ad95029f9600ab2b3512c824
 				event.preventDefault();
 				$.ajax({
 					type: 'POST',
@@ -265,11 +258,7 @@
 					}
 				});
 			});
-<<<<<<< HEAD
 			$("#downBtn").click(function() {
-=======
-			$("downBtn").click(function() {
->>>>>>> 806f9beae9d6b331ad95029f9600ab2b3512c824
 				event.preventDefault();
 				$.ajax({
 					type: 'POST',
@@ -293,11 +282,7 @@
 				});
 
 			});
-<<<<<<< HEAD
 			$("#deleteBtn").click(function() {
-=======
-			$("deleteBtn").click(function() {
->>>>>>> 806f9beae9d6b331ad95029f9600ab2b3512c824
 				event.preventDefault();
 				$.ajax({
 					type: 'DELETE',
