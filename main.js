@@ -344,7 +344,7 @@ app.post('/questions/:id/upvote', async function(req, res){
                 doc.save().catch(err=>{
                       logger.info("Save Question Error",err);
                 })
-                User.updateOne({$inc: {reputation: value}}).catch(err=>{
+                User.updateOne({username: doc.username}, {$inc: {reputation: value}}).catch(err=>{
                   logger.info("Update user repputation error: ", err);
                 })
             }
@@ -357,99 +357,7 @@ app.post('/questions/:id/upvote', async function(req, res){
       return res.status(401).json(loginStatus);
   }
 })
-// app.post('/search',(req, res)=>{
-//   var body = { 'timestamp': null, 'limit': null, 'sort_by': null, 'has_media': null, 'accepted': null, 'query': null, 'tags': null };
-//   if (req.body) {
-//       body.timestamp = req.body.timestamp // number
-//       body.limit = req.body.limit // number  >=25 && <=100
-//       body.sort_by = req.body.sort_by // string, default---> score
-//       body.has_media = req.body.has_media // boolean, default ---> false
-//       body.accepted = req.body.accepted // boolean, default ---> false
-//       body.query = req.body.q // string, support space
-//       body.tags = req.body.tags // array
-//   }
-//   // check constains and assign default values
-//   if (body.timestamp== null) { body.timestamp = unixTime(new Date()) }
-//   if (body.limit == null) { body.limit = 25 }
-//   if (body.limit > 100) { return res.status(400).json({ status: 'error', error: 'limit should be less than 100' }) }
-//   if (body.sort_by == null || body.sort_by == 'score')
-//        body.sort_by = {'score': {'order': 'desc'}}
-//   else
-//      body.sort_by = {'timestamp': {'order': 'desc'}}
-//   if (body.has_media == null) { body.has_media = false }
-//   if (body.accepted == null) { body.accepted = false }
-//   logger.info('Search Limitions: ', body)
-//   var sort = {'timestamp': {'order': 'desc'}}
-//   i
-//   var body ={
-//     "sort":{
-//         bodysort_by: {"order": "descr"}
-//       },
-//     query: {
-//       query_string : {
-//           default_field : 'id',
-//           query : username
-//       }
-//     }
-//   }
 
-//   Question.find({}).populate('user').exec(function (err, docs) {
-//     if (err) {
-//       res.status(400).send({ status: 'error', error: err })
-//     } else {
-//       var all_questions = docs
-
-//       console.log('all_questions: %d\n', all_questions.length)
-//       // filter by timestamp --> search questions from this time and earlier
-//       all_questions = all_questions.filter(question => (question.timestamp <= timestamp))
-//       console.log('after filtering by timestamp, questions---->%d\n', all_questions.length)
-//       // filter by has_media
-//       if (has_media) { all_questions = all_questions.filter(question => (question.media.length > 0)) }
-//       console.log('after filtering by has_media, questions---->%d\n', all_questions.length)
-//       // filter by accepted
-//       if (accepted) { all_questions = all_questions.filter(question => (question.accepted_answer != null)) }
-//       console.log('after filtering by accepted, questions---->%d\n', all_questions.length)
-//       // filter by tags
-//       if (tags && tags.length > 0) {
-//         all_qestions = all_questions.filter(question => ((question.tags).every(ele => tags.indexOf(ele) > -1)))
-//         console.log('after filtering by tags, questions---->%d\n', all_questions.length)
-//       }
-//       // filter by query
-//       if (query && query.length > 0) {
-//         query = query.toLowerCase()
-//         var words = query.split(' ')
-//         console.log('query words--->%s\n', JSON.stringify(words))
-//         // for (var i = 0; i < all_questions.length; i++) {
-//         //   console.log(all_questions[i].title + ' ' + all_questions[i].title.split(' ').some(ele => words.indexOf(ele) >= 0))
-//         //   console.log(all_questions[i].body + ' ' + all_questions[i].body.split(' ').some(ele => words.indexOf(ele) >= 0))
-//         // }
-//         all_questions = all_questions.filter(question => (question.title.toLowerCase().split(' ').some(ele => words.indexOf(ele) >= 0) || question.body.toLowerCase().split(' ').some(ele => words.indexOf(ele) >= 0)))
-//         console.log('after filtering by query, questions---->%s\n', JSON.stringify(all_questions))
-//       }
-//       if (all_questions.length > 0) {
-//         if (sort_by == 'score') {
-//           all_questions.sort((a, b) => ((a.upvote.length - a.downvote.length) - (b.upvote.length - b.downvote.length)))
-//         } else {
-//           all_questions.sort((a, b) => ((a.timestamp - b.timestamp)))
-//         }
-//         console.log('after sorting, questions---->%d\n', all_questions.length)
-//       }
-//       if (all_questions.length >= limit) {
-//         all_questions = all_questions.slice(0, limit)
-//         console.log('after slicing an array, questions---->%s\n', JSON.stringify(all_questions))
-//       }
-//       var return_questions = []
-//       for (var i = 0; i < all_questions.length; i++) {
-//         var ele = all_questions[i]
-//         var score = (ele.upvote.length - ele.downvote.length)
-//         var question = { id: ele.id, user: { username: ele.user.username, reputation: ele.user.reputation }, title: ele.title, body: ele.body, score: score, view_count: ele.viewers.length, answer_count: ele.answers.length, timestamp: ele.timestamp, media: ele.media, tags: ele.tags, accepted_answer_id: ele.accepted_answer }
-//         console.log('question------> %s\n', JSON.stringify(question))
-//         return_questions.push(question)
-//       }
-//       res.json({ status: 'OK', questions: return_questions })
-//     }
-//   })
-// })
 /************************************** Answer Parts ************************************/
 app.post('/questions/:id/answers/add', async function(req, res){
   var user =  req.cookies['userSession']
@@ -507,18 +415,19 @@ app.post('/questions/:id/answers/add', async function(req, res){
       return res.status(401).json(loginStatus);
     }
 })
-app.get('/questions/:id/answers', async function (req, res) {
+app.get('/questions/:id/answers', async (req, res) =>{
   var id = req.params.id;
   logger.info("Entering 'questions/:id/answers: " + id);
   try{
-      var [questionObj, asnwers] = Promise.all([
+     
+      var [questionObj, answers] = await Promise.all([
          Question.findOne({id: id }),
          Answer.find({question_id: id})
       ])
       if(questionObj == null)
            return res.status(404).json({ status: 'error', error: 'invalid questionID'  + id})
-      var return_answers = [];
-      var len = answers.length;
+        var return_answers = [];
+        var len = answers.length;
       var ele;
       for(var i=0; i < len; i++){
          ele = answers[i];
@@ -599,7 +508,7 @@ app.post('/answers/:id/upvote', async function(req, res){
                 doc.save().catch(err=>{
                       logger.info("Save Question Error: ",err);
                 })
-                User.updateOne({$inc: {reputation: value}}).catch(err=>{
+                User.updateOne({username: doc.username},{$inc: {reputation: value}}).catch(err=>{
                   logger.info("Update user repputation error: ", err);
                 })
             }
