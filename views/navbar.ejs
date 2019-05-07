@@ -1,6 +1,6 @@
 <!-- views/parts/navbar.ejs -->
 <nav id="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <a class="navbar-brand" href="http://130.245.171.156/">Firewall's Stack Overflow</a>
+    <a class="navbar-brand" href="/">Firewall's Stack Overflow</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
     </button>
@@ -79,7 +79,7 @@
                         </form>
                     </div>
                     <div class="modal-footer">
-                        <a href="http://130.245.171.156/verify" class="text-warning">Click Here to verify You Account</a>
+                        <a href="/verify" class="text-warning">Click Here to verify You Account</a>
                     </div>
                 </div>
             </div>
@@ -98,7 +98,7 @@
                  contentType: 'application/json',
                  success: function (res) {
                    if(res.status == 'OK'){
-                      window.location.href = 'http://130.245.171.156/';
+                      window.location.href = '/';
                    }else{
                        alert(JSON.stringify(res));
                    }
@@ -123,7 +123,7 @@
                 contentType: 'application/json',
                 success: function (res) {
                 if(res.status == 'OK'){
-                    window.location.href = 'http://130.245.171.156/verify';
+                    window.location.href = '/verify';
                 }else {
                     alert(JSON.stringify(res));
                 }
@@ -142,7 +142,7 @@
                  url: '/logout',
                  success: function (res) {
                    if(res.status == 'OK'){
-                      window.location.href = 'http://130.245.171.156/';
+                      window.location.href = '/';
                    }else{
                        alert(JSON.stringify(err));
                    }
