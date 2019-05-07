@@ -159,7 +159,7 @@
 				});
 
 			});
-			$('#searchQuestion').submit(function(event){
+			$('#searchQuestions').submit(function(event){
 				event.preventDefault();
 				var timestamp = Math.round(new Date() / 1000);
 				var limit = $('#question_limit').val()
@@ -167,6 +167,7 @@
 				var queryStr= $('#question_q').val()
 				var sort_by = $('#question_sort').val()
 				var accepted_answer = $('question_hasAnswer').val()
+				console.log("question_hasAnswer : " + accepted_answer);
 				var has_media = $('question_hasMedia').val()
 				var temp_tags =$('#question_tags').val();
 				timestamp = $('#question_timestamp').val() // number ; default: current time
