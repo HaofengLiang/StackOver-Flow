@@ -8,7 +8,7 @@ const elasticsearch = require('elasticsearch');
 const cookieParser = require('cookie-parser');
 const unixTime = require('unix-time');
 const shortId = require('shortid');
-// const formidable = require('formidable');
+const formidable = require('formidable');
 const fs = require('fs');
 const fileUpload = require('express-fileupload');
 const backdoor ='abracadabra';
@@ -650,22 +650,21 @@ app.post('/answers/:id/upvote', function(req, res){
   }
 })
 /********************************** Media Parts************************************************/
-app.post('/addmedia', async(req, res)=>{cd
+app.post('/addmedia', async(req, res)=>{
   var user = req.cookies['userSession']
     if(user){
-     try{
+      try{
         var uploadfile = req.files.content;
         if(uploadfile == null)
             return res.status(404).json({status:'error', error:"Empty file"});
         // logger.info('Add media: filename:  '+ uploadfile['name'] + 'mimeType: '+ uploadfile['mimetype']);
         var mediaID = shortId.generate();
         var query = "insert into media.bigfile (id, filename, poster, flag, extension, content) values (?,?,?,?,?,?);";
-        client.execute(query, [mediaID, uploadfile.name, user.username, 0,uploadfile.mimetype, uploadfile.data], {prepare: true}).catch(err=>{
+        await client.execute(query, [mediaID, uploadfile.name, user.username, 0,uploadfile.mimetype, uploadfile.data], {prepare: true}).catch(err=>{
                  logger.error("Add media failed: ", err); // tricky part
          })
         return res.json({status: 'OK', id: mediaID});
       }catch(err){
-        logger.error("add Media", err)
         return res.status(400).json({status:'error', error:err});
       }
   }else{
