@@ -350,14 +350,14 @@ var user =  req.cookies['userSession']
             if(downvote_index < 0){ // no downvote before, downvote and decrease rep
                 (doc.downvote).push(user.username);
                 if((doc.user.reputation) > 1){
-                  rep  -= 1;
+                   rep  -= 1;
                 }
               if(upvote_index > -1 ){ // upvote before, recall it only
                 (doc.upvote).splice(upvote_index, 1);
               }
             }else{ // repeat downvote, recall it and increase rep
                (doc.downvote).splice(downvote_index, 1);
-                rep  += 1;
+                rep += 1;
             }
           }
           doc.save().catch(err=>{
@@ -400,6 +400,10 @@ app.post('/search',(req, res)=>{
    if (has_media == null) { has_media = false }
    if (accepted == null) { accepted = false }
   var searchBody = {
+    '_source': {
+      includes: ["id", "media", "accepted_answer"],
+      'excludes': ['__v']
+      },
     'query':{
       'bool':{
        'must': [
@@ -418,21 +422,19 @@ app.post('/search',(req, res)=>{
      })
    }
     if(tags.length > 0)
-      (searchBody.query.bool.must).put({'term': {"tags": tags}})
+      (searchBody.query.bool.must).push({'terms': {"tags": tags}})
     if(has_media)
-      (searchBody.query.bool.must).put( {'exists': {"field": "media"}})
+      (searchBody.query.bool.must).push( {'exists': {"field": "media"}})
     if(accepted)
-      (searchBody.query.bool.must).put({'exists': {"field": "accepted_answer"}})
-  // logger.info("my Search body: ", searchBody );
+      (searchBody.query.bool.must).push({'exists': {"field": "accepted_answer"}})
+  logger.info("my Search body: ", searchBody );
    elasticClient.search({
     index: 'questions',
     type: 'questions_type',
     source:true,
-    size:limit,
     body: searchBody,
     sort:[sort_by]
    }).then(questions => {
-     logger.info("questions", questions)
         return res.json({status: 'OK', question: questions.hits.hits})
     }).catch(err => {
         return res.json({status: 'error', error: err})
@@ -573,35 +575,42 @@ app.post('/answers/:id/upvote', async function(req, res){
         else{
           var upvote_index = (doc.upvote).indexOf(user.username)
           var downvote_index =(doc.downvote).indexOf(user.username)
+          var rep = doc.user.reputation
           if(upvote){ // want upvote
             if(upvote_index < 0){ // no upvote before,  upvote and increase rep
               (doc.upvote).push(user.username);
-              (doc.user.reputation) += 1;
+              rep += 1;
               if(downvote_index > -1 ){ // downvote before, recall it only
                 (doc.downvote).splice(downvote_index, 1);
               }
             }else{ // repeat upvote, recall it and decrease rep
               (doc.upvote).splice(upvote_index, 1);
-              if((doc.user.reputation) > 1)
-                  doc.user.reputation  -= 1;
+              if((doc.user.reputation) > 1){
+                  rep  -= 1;
+              }
             }
           }else{ // want downvote
             if(downvote_index < 0){ // no downvote before, downvote and decrease rep
                 (doc.downvote).push(user.username);
-                if((doc.user.reputation) > 1)
-                   doc.user.reputation  -= 1;
+                if((doc.user.reputation) > 1){
+                   rep  -= 1;
+                }
               if(upvote_index > -1 ){ // upvote before, recall it only
                 (doc.upvote).splice(upvote_index, 1);
               }
             }else{ // repeat downvote, recall it and increase rep
                (doc.downvote).splice(downvote_index, 1);
-                doc.user.reputation  += 1;
+                rep += 1;
             }
           }
           doc.save().catch(err=>{
               logger.error("Save Question Error",err);
           })
-          }
+          User.updateOne({_id: doc.user}, {$set: {reputation: rep}}).catch(err=>{
+            logger.error("Update user's rep error", err);
+          })
+          return res.json(OK);
+        }
         }).catch(err=>{
           return res.status(400).json({status: 'error', error: err});
         })
