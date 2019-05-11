@@ -118,7 +118,7 @@
     //     }
     //     });
     // });
-    $("#acceptBtn").submit(function(){
+    $("#acceptBtn").click(function(){
          event.preventDefault();
         $.ajax({
             type: 'POST',
@@ -164,7 +164,7 @@
 				event.preventDefault();
 				$.ajax({
 					type: 'POST',
-					url: '/answers/' + $("#answer_id").val() + "/downvote",
+					url: '/answers/' + $("#answer_id").val() + "/upvote",
 					dataType: 'json',
 					data: JSON.stringify({
 						upvote: false
