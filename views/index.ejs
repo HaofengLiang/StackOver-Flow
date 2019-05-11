@@ -262,7 +262,7 @@
 				event.preventDefault();
 				$.ajax({
 					type: 'POST',
-					url: '/questions/' + $("#question_id").val() + "/downvote",
+					url: '/questions/' + $("#question_id").val() + "/upvote",
 					dataType: 'json',
 					data: JSON.stringify({
 						upvote: false
