@@ -8,7 +8,7 @@ const elasticsearch = require('elasticsearch');
 const cookieParser = require('cookie-parser');
 const unixTime = require('unix-time');
 const shortId = require('shortid');
-// const formidable = require('formidable');
+const formidable = require('formidable');
 const fs = require('fs');
 const fileUpload = require('express-fileupload');
 const backdoor ='abracadabra';
@@ -21,12 +21,12 @@ const logger = winston.createLogger({
 const sendmail = require('sendmail')({silent: true});
 const port = process.env.PORT || 3000;
 /*********************************Basic Configuration **********************************************/
-app.use(compression()) // gzip
+// app.use(compression()) // gzip
 app.use(fileUpload());
 // app.use(bodyParser.json({ extended: true})); // to support JSON-encoded bodies
 // app.use(bodyParser.urlencoded({  extended: true }));
-app.use(bodyParser.json({limit: '100mb',extended: true}));
-app.use(bodyParser.urlencoded({limit: '100mb', extended: true}));
+app.use(bodyParser.json({limit: '50mb',extended: true}));
+app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public'))); // for static files, like css, images
 app.set('view engine', 'ejs'); // for rendering html files in ejs format
@@ -45,7 +45,7 @@ const elasticClient = new elasticsearch.Client({ host: '192.168.122.41:9200'}, f
   if(err){ return logger.error("elasticClient  connection Faield", err)}
 });
 elasticClient.ping({// Send a HEAD request to / and allow up to 1 second for it to complete.
-   requestTimeout: 3000 // ping usually has a 3000ms timeout
+   requestTimeout: 3000  // ping usually has a 3000ms timeout
 }, function (error) {if (error) logger.error('elasticsearch cluster is down!');
 });
 /*********************************** DB--- Schema ************************************/
@@ -114,49 +114,43 @@ app.get('/media', (req, res)=>{
   return res.render('media.ejs', {user: user});
 })
  /********************************************** GUI Above *********************************************/
-app.post('/adduser', async (req, res) =>{
+app.post('/adduser', function (req, res) {
+  // logger.info("Entering '/adduser': " + req.body.username);
   mailOptions.to = req.body.email;
+  sendmail(mailOptions, function(err, reply) {  if(err)  logger.error("Mailling error", err); });
   var newUser = new User({
     username: req.body.username,
     email: req.body.email,
     password: req.body.password
   })
-  try{
-    await Promise.all([
-      sendmail(mailOptions),
-      newUser.save()
-    ])
+  newUser.save().then(doc=>{
     return res.json(OK);
-    }catch(err){
-      logger.error("Save User",err)
-      return res.status(400).json({status: 'error', error: err });
-    }
+  }).catch(err=>{
+    return res.status(400).json({status: 'error', error: err });
+  })
 })
 app.post('/verify', (req, res)=>{
+  //  logger.info("Entering 'verify':" + req.body.email);
    User.updateOne({email: req.body.email, key: req.body.key}, { $set: { verify: true}}).then(doc=>{
         if(doc.n > 0 ){  //doc.nModified > 0
           return res.json(OK);
         }else{
-          logger.error("Invalid Email:" + req.body.email )
           return res.status(404).json({status: 'error', error: "Invalid Email: " + req.body.email});
         }
    }).catch(err=>{
-     logger.error("Verify", err)
      return res.status(400).json({status: 'error', error: err});
    })
 })
 app.post('/login', (req, res) =>{
+  // logger.info("Entering 'login': "+ req.body.username);
   User.findOne({username: req.body.username, password: req.body.password, verify: true}, "_id id username reputation").then(doc=>{
-      if(doc == null){
-        logger.error("invalid user"+ req.body.username)
+      if(doc == null)
         return res.status(404).json({status: 'error', error: 'Invalid Username: ' + req.body.username});
-      }
       else{
         res.cookie('userSession', doc, { maxAge: 24 * 60 * 60 * 1000  } );
         return res.json(OK);
        }
   }).catch(err=>{
-      logger.error("login". err);
        return  res.status(400).json({status:' error', error: err})
   })
 })
@@ -167,17 +161,18 @@ app.post('/logout', (req, res)=>{
 /********************************************** User Parts *******************************************************/
 app.get('/user/:username', async (req, res)=>{
   var username =  req.params.username
+  // logger.info("Entering 'user/username");
    User.findOne({username: username}, '-_id email reputation').then(user=>{
-     if(user == null){
+     if(user == null)
           return res.status(404).json({status: 'error', error: "Invalid Username: "+ username});
-     }
       else return res.json({status: 'OK', user: user});
     }).catch(err=>{
-        return res.status(400).json({status: 'error', error: err});
+        res.status(400).json({status: 'error', error: err});
    })
 })
 app.get('/user/:username/questions', async (req, res)=>{
   var username = req.params.username
+  // logger.info("Entering 'user/username/questions: " + username);
   try{
         var [user, questions ] = await Promise.all([
               User.findOne({username: username}),
@@ -199,7 +194,7 @@ app.get('/user/:username/questions', async (req, res)=>{
             })
         ])
         if(user == null ){
-          return res.status(404).json({status: 'error', error: "Invalid Username: " + username})
+         return res.status(404).json({status: 'error', error: "Invalid Username: " + username})
         }
         if(questions.hits.total > 0){
             questions = questions.hits.hits.map(a=>a._source.id)
@@ -229,6 +224,7 @@ app.get('/user/:username/answers', async (req, res)=>{
 /***************************************** Questions Part ********************************************************/
 app.post('/questions/add', async (req, res)=>{
   var user =  req.cookies['userSession']
+  // logger.info("Entering 'questions/add");
   if(user){
       var media =[];
       if(req.body.media)
@@ -271,6 +267,7 @@ app.post('/questions/add', async (req, res)=>{
 
 app.get('/questions/:id',  (req, res)=>{
   var id = req.params.id;
+  // logger.info("Entering 'questions/:id: " +id);
   var viewID = req.ip;
   var user = req.cookies['userSession'];
   if(user)
@@ -280,6 +277,8 @@ app.get('/questions/:id',  (req, res)=>{
         return res.status(404).json({status: 'error', error:'Invalid questionId: ' +id});
         User.findById(doc.user).then(user=>{
           var score = doc.upvote.length - doc.downvote.length;
+          // if(score != 0)
+          //   logger.info("score: "+ score + "id: "+ id)
           var question = { id: doc.id, user: { username: user.username, reputation: user.reputation }, title: doc.title, body: doc.body, score: score, view_count: doc.viewers.length, answer_count: doc.answers.length, timestamp: doc.timestamp, media: doc.media, tags: doc.tags, accepted_answer_id: doc.accepted_answer_id };
         return res.json({status: 'OK', question: question});
       }).catch(err=>{
@@ -294,16 +293,20 @@ app.delete('/questions/:id', async function(req, res){
   var user =  req.cookies['userSession']
   if(user){
     try{
+        logger.info("Entering 'delete questions/:id: " +id);
         var [question, answers] = await Promise.all([
           Question.findOneAndRemove({id: id, user: user._id}),
           Answer.find({question_id: id})
         ])
         if(question == null)   {
+            // logger.error("empty question Id "+id);
             return res.status(404).json({status: 'error', error:"invalid questioID: "+id});
         }
         var media = question.media;
+        //  logger.info("Media: " + JSON.stringify(media))
         var len = answers.length;
         for(var i=0; i < len; i++) media = media.concat((answers[i]).media);
+        // logger.info("Media after answer: " + JSON.stringify(media))
         if(len > 0){
           Answer.deleteMany({question_id: id}).catch(err=>{
             logger.error("Delete answers in delete question: ", err);
@@ -317,7 +320,6 @@ app.delete('/questions/:id', async function(req, res){
         }
         return res.status(200).json(OK);
       }catch(err){
-          logger.error("delete question", err)
           return res.status(400).json({status: 'error', error:err});
     }
    }else{
@@ -325,6 +327,7 @@ app.delete('/questions/:id', async function(req, res){
   }
 })
 app.post('/questions/:id/upvote', function(req, res){
+  // logger.info("Entering '/questions/:id/upvote:  " + req.params.id);
 var user =  req.cookies['userSession']
   if(user){
       var upvote = req.body.upvote;
@@ -465,6 +468,7 @@ app.post('/search',(req, res)=>{
 app.post('/questions/:id/answers/add', async function(req, res){
   var user =  req.cookies['userSession']
   var id = req.params.id
+  // logger.info("Entering /questions/:id/answers/add: "+ id);
   if(user){
       var media =[];
       if(req.body.media)
@@ -478,6 +482,7 @@ app.post('/questions/:id/answers/add', async function(req, res){
                  client.execute(query, [media, 0, user.username], {prepare: true}),
                  Question.findOne({id: id})
             ])
+            // logger.info("QuestionObj", questionObj);
               var rowLen = docs.rowLength;
               if(rowLen == 0 ||  rowLen != media.length){
                 return res.status(400).json({status: 'error', error: media});
@@ -509,7 +514,6 @@ app.post('/questions/:id/answers/add', async function(req, res){
             }
           return res.json({status: 'OK', id: newAsnwer.id});
         }catch(err){
-          logger.error("add Answer", err);
           return res.status(400).json({status: 'error', error: err});
         }
     }else{
@@ -518,6 +522,7 @@ app.post('/questions/:id/answers/add', async function(req, res){
 })
 app.get('/questions/:id/answers', async (req, res) =>{
   var id = req.params.id;
+  // logger.info("Entering 'questions/:id/answers: " + id);
   try{
       var [questionObj, answers] = await Promise.all([
         elasticClient.search({
@@ -558,6 +563,7 @@ app.get('/questions/:id/answers', async (req, res) =>{
 
 app.post('/answers/:id/accept', async function(req,res){
   var id = req.params.id;
+  // logger.info("Entering '/answers/:id/accept:  " + id);
   var user =  req.cookies['userSession']
   if(user){
     try{
@@ -650,22 +656,21 @@ app.post('/answers/:id/upvote', function(req, res){
   }
 })
 /********************************** Media Parts************************************************/
-app.post('/addmedia', async(req, res)=>{cd
+app.post('/addmedia', async(req, res)=>{
   var user = req.cookies['userSession']
     if(user){
-     try{
+      try{
         var uploadfile = req.files.content;
         if(uploadfile == null)
             return res.status(404).json({status:'error', error:"Empty file"});
-        // logger.info('Add media: filename:  '+ uploadfile['name'] + 'mimeType: '+ uploadfile['mimetype']);
+        logger.info('Add media: filename:  '+ uploadfile['name'] + 'mimeType: '+ uploadfile['mimetype']);
         var mediaID = shortId.generate();
         var query = "insert into media.bigfile (id, filename, poster, flag, extension, content) values (?,?,?,?,?,?);";
-        client.execute(query, [mediaID, uploadfile.name, user.username, 0,uploadfile.mimetype, uploadfile.data], {prepare: true}).catch(err=>{
+        await client.execute(query, [mediaID, uploadfile.name, user.username, 0,uploadfile.mimetype, uploadfile.data], {prepare: true}).catch(err=>{
                  logger.error("Add media failed: ", err); // tricky part
          })
         return res.json({status: 'OK', id: mediaID});
       }catch(err){
-        logger.error("add Media", err)
         return res.status(400).json({status:'error', error:err});
       }
   }else{
