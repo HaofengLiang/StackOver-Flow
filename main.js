@@ -10,6 +10,7 @@ const unixTime = require('unix-time');
 const shortId = require('shortid');
 const formidable = require('formidable');
 const fs = require('fs');
+const fileUpload = require('express-fileupload');
 const backdoor ='abracadabra';
 const app = express(); // Create an Application based on ExpressJS
 const winston = require('winston'); //A logger for just about everything
@@ -20,7 +21,8 @@ const logger = winston.createLogger({
 const sendmail = require('sendmail')({silent: true});
 const port = process.env.PORT || 3000;
 /*********************************Basic Configuration **********************************************/
-app.use(compression()) // gzip
+// app.use(compression()) // gzip
+app.use(fileUpload());
 // app.use(bodyParser.json({ extended: true})); // to support JSON-encoded bodies
 // app.use(bodyParser.urlencoded({  extended: true }));
 app.use(bodyParser.json({limit: '50mb',extended: true}));
@@ -55,7 +57,7 @@ const userSchema = new mongoose.Schema({ //Create & Define a schema for 'User'
     reputation: { type: Number, default: 1},
     verify: { type: Boolean, default: false },
     key: { type: String, default: 'abracadabra' }
-})
+},{ versionKey: false })
 const User = mongoose.model('User', userSchema) // Create User module for the created schema
 
 const answerSchema = new mongoose.Schema({ //Create & Define a schema for 'Answer'
@@ -68,7 +70,7 @@ const answerSchema = new mongoose.Schema({ //Create & Define a schema for 'Answe
     is_accepted: { type: Boolean, default: false },
     timestamp: { type: Number, default: unixTime(new Date()) },
     media: [ { type: String } ] // media ID (array)
-})
+},  { versionKey: false })
 const Answer = mongoose.model('Answer', answerSchema) // Create Answer module for the created schema
 
 const questionSchema = new mongoose.Schema({ // Create & Define a schema for 'Question'
@@ -83,8 +85,8 @@ const questionSchema = new mongoose.Schema({ // Create & Define a schema for 'Qu
     timestamp: { type: Number, default: unixTime(new Date()) },
     viewers: [ { type: String } ], // viewer's name -- array  or ip address
     answers: [ { type: String } ], // answer's id --array
-    accepted_answer: { type: String, require: true, default: null}
-  });
+    accepted_answer_id: { type: String, require: true, default: null}
+  },  { versionKey: false });
 const Question = mongoose.model('Question', questionSchema)// Create Question module for the created schema
 /**************************************************** Global Parameters *****************************/
 const OK = {status: 'OK'};
@@ -274,10 +276,10 @@ app.get('/questions/:id',  (req, res)=>{
     if(doc == null)
         return res.status(404).json({status: 'error', error:'Invalid questionId: ' +id});
         User.findById(doc.user).then(user=>{
-          var score = doc.upvote - doc.downvote;
-          if(score != 0)
-            logger.info("Id: " + id + ", score: " + score)
-          var question = { id: doc.id, user: { username: user.username, reputation: user.reputation }, title: doc.title, body: doc.body, score: score, view_count: doc.viewers.length, answer_count: doc.answers.length, timestamp: doc.timestamp, media: doc.media, tags: doc.tags, accepted_answer_id: doc.accepted_answer };
+          var score = doc.upvote.length - doc.downvote.length;
+          // if(score != 0)
+          //   logger.info("score: "+ score + "id: "+ id)
+          var question = { id: doc.id, user: { username: user.username, reputation: user.reputation }, title: doc.title, body: doc.body, score: score, view_count: doc.viewers.length, answer_count: doc.answers.length, timestamp: doc.timestamp, media: doc.media, tags: doc.tags, accepted_answer_id: doc.accepted_answer_id };
         return res.json({status: 'OK', question: question});
       }).catch(err=>{
           return res.status(400).json({status: 'error', error: err});
@@ -288,31 +290,35 @@ app.get('/questions/:id',  (req, res)=>{
 })
 app.delete('/questions/:id', async function(req, res){
   var id = req.params.id;
-  // logger.info("Entering 'delete questions/:id: " +id);
   var user =  req.cookies['userSession']
   if(user){
     try{
+        logger.info("Entering 'delete questions/:id: " +id);
         var [question, answers] = await Promise.all([
           Question.findOneAndRemove({id: id, user: user._id}),
           Answer.find({question_id: id})
         ])
-        if(question == null)  return res.status(404).json({status: 'error', error:"invalid questioID: "+id});
+        if(question == null)   {
+            // logger.error("empty question Id "+id);
+            return res.status(404).json({status: 'error', error:"invalid questioID: "+id});
+        }
         var media = question.media;
+        //  logger.info("Media: " + JSON.stringify(media))
         var len = answers.length;
-        for(var i=0; i < len; i++) media.push((answers[i]).media);
+        for(var i=0; i < len; i++) media = media.concat((answers[i]).media);
+        // logger.info("Media after answer: " + JSON.stringify(media))
         if(len > 0){
           Answer.deleteMany({question_id: id}).catch(err=>{
             logger.error("Delete answers in delete question: ", err);
             })
         }
-        // logger.info("Media Files: " , media);
         if(media.length > 0){
           var query = "delete from media.bigfile where id in ?";
           client.execute(query, [media], {prepare:true}).catch(err=>{
             logger.error("Error media in delete question: ", err);
           })
         }
-        res.status(200).json(OK);
+        return res.status(200).json(OK);
       }catch(err){
           return res.status(400).json({status: 'error', error:err});
     }
@@ -320,22 +326,24 @@ app.delete('/questions/:id', async function(req, res){
           return res.status(401).json(loginStatus);
   }
 })
-app.post('/questions/:id/upvote', async function(req, res){
+app.post('/questions/:id/upvote', function(req, res){
   // logger.info("Entering '/questions/:id/upvote:  " + req.params.id);
 var user =  req.cookies['userSession']
   if(user){
       var upvote = req.body.upvote;
       if(upvote == null) return res.status(400).json({status: 'error', error: "No upvote value"});
-      Question.findOne({id: req.params.id}).populate('user').then(doc=>{
+      Question.findOne({id: req.params.id}).populate('user').exec().then( async doc=>{
         if(doc == null)
               return res.status(404).json({status: 'error', error: "Invalid question id: " + req.params.id});
         else{
           var upvote_index = (doc.upvote).indexOf(user.username)
           var downvote_index =(doc.downvote).indexOf(user.username)
           var rep = doc.user.reputation
+          var change = false;
           if(upvote){ // want upvote
             if(upvote_index < 0){ // no upvote before,  upvote and increase rep
               (doc.upvote).push(user.username);
+              change = true;
               rep += 1;
               if(downvote_index > -1 ){ // downvote before, recall it only
                 (doc.downvote).splice(downvote_index, 1);
@@ -343,6 +351,7 @@ var user =  req.cookies['userSession']
             }else{ // repeat upvote, recall it and decrease rep
               (doc.upvote).splice(upvote_index, 1);
               if((doc.user.reputation) > 1){
+                change = true;
                   rep  -= 1;
               }
             }
@@ -350,6 +359,7 @@ var user =  req.cookies['userSession']
             if(downvote_index < 0){ // no downvote before, downvote and decrease rep
                 (doc.downvote).push(user.username);
                 if((doc.user.reputation) > 1){
+                  change = true;
                    rep  -= 1;
                 }
               if(upvote_index > -1 ){ // upvote before, recall it only
@@ -357,18 +367,25 @@ var user =  req.cookies['userSession']
               }
             }else{ // repeat downvote, recall it and increase rep
                (doc.downvote).splice(downvote_index, 1);
+                change = true;
                 rep += 1;
             }
           }
-          doc.save().catch(err=>{
-              logger.error("Save Question Error",err);
-          })
-          User.updateOne({_id: doc.user}, {$set: {reputation: rep}}).catch(err=>{
-            logger.error("Update user's rep error", err);
-          })
-          return res.json(OK);
-          }
-        }).catch(err=>{
+        try{
+            if(change){
+               await Promise.all([
+                  doc.save(),
+                  User.updateOne({_id: doc.user}, {$set: {reputation: rep}})
+               ])
+            }else{
+              await doc.save()
+            }
+            return res.json(OK);
+        }catch(err){
+          return res.status(400).json({status: 'error', error: err});
+        }
+      }
+    }).catch(err=>{
           return res.status(400).json({status: 'error', error: err});
         })
   }else{
@@ -388,7 +405,7 @@ app.post('/search',(req, res)=>{
        query = req.body.q // string, support space
        tags = req.body.tags // array
    }
-   if (timestamp== null) 
+   if (timestamp== null)
          timestamp = unixTime(new Date());
    if (limit == null) { limit = 25 }
    if (limit > 100) { return res.status(400).json({ status: 'error', error: 'limit should be less than 100' }) }
@@ -400,10 +417,9 @@ app.post('/search',(req, res)=>{
    if (has_media == null) { has_media = false }
    if (accepted == null) { accepted = false }
   var searchBody = {
-    '_source': {
-      includes: ["id", "media", "accepted_answer"],
-      'excludes': ['__v']
-      },
+    // '_source': {
+    //   'excludes': ['__v']
+    //   },
     'query':{
       'bool':{
        'must': [
@@ -421,21 +437,29 @@ app.post('/search',(req, res)=>{
         }
      })
    }
-    if(tags.length > 0)
-      (searchBody.query.bool.must).push({'terms': {"tags": tags}})
+    for(var i=0; i< tags.length; i++)
+      (searchBody.query.bool.must).push({'term': {"tags": tags[i]}})
     if(has_media)
       (searchBody.query.bool.must).push( {'exists': {"field": "media"}})
     if(accepted)
-      (searchBody.query.bool.must).push({'exists': {"field": "accepted_answer"}})
-  logger.info("my Search body: ", searchBody );
+      (searchBody.query.bool.must).push({'exists': {"field": "accepted_answer_id"}})
+  // logger.info("my Search body: ", searchBody );
    elasticClient.search({
     index: 'questions',
     type: 'questions_type',
     source:true,
+    size: limit,
     body: searchBody,
     sort:[sort_by]
    }).then(questions => {
-        return res.json({status: 'OK', question: questions.hits.hits})
+     if(questions.hits.total > 0){
+        questions.hits.hits = (questions.hits.hits).map(function(a){
+          if(a._source.media == null)
+              a._source.media = [];
+            return a._source;
+     })
+    }
+       return res.json({status: 'OK', questions: questions.hits.hits})
     }).catch(err => {
         return res.json({status: 'error', error: err})
     })
@@ -517,18 +541,19 @@ app.get('/questions/:id/answers', async (req, res) =>{
           }
         }
       }),
-        Answer.find({question_id: id})
+        Answer.find({question_id: id}).populate('user').exec()
       ])
-      if(questionObj == null)
+      if(questionObj == null){
            return res.status(404).json({ status: 'error', error: 'invalid questionID'  + id})
+      }
         var return_answers = [];
         var len = answers.length;
-      var ele;
-      var score;
+        var ele;
+        var score;
       for(var i=0; i < len; i++){
          ele = answers[i];
-         score = ele.upvote - ele.downvote;
-         return_answers.push({ id: ele.id, user: ele.username, body:ele.body, score: score, is_accepted:ele.is_accepted, timestamp: ele.timestamp, media: ele.media });
+         score = ele.upvote.length - ele.downvote.length;
+         return_answers.push({ id: ele.id, user: ele.user.username, body:ele.body, score: score, is_accepted:ele.is_accepted, timestamp: ele.timestamp, media: ele.media });
       }
       res.json({ status: 'OK', answers: return_answers });
     }catch(err) {
@@ -546,10 +571,10 @@ app.post('/answers/:id/accept', async function(req,res){
          Answer.findOne({id: id}),
          Question.findOne({user: user._id, answers: { $in : [id]} })
        ])
-       if(answer == null || answer.is_accepted || question == null || question.accepted_answer != null){
+       if(answer == null || answer.is_accepted || question == null || question.accepted_answer_id != null){
           return res.status(400).json({status: 'error', error: "already accepted or null answer/question!"})
        }else{
-             question.accepted_answer = answer.id;
+             question.accepted_answer_id = answer.id;
              question.save().catch(err=>{ // tricky part
                logger.error("Accept error in question save", err);
              });
@@ -562,23 +587,24 @@ app.post('/answers/:id/accept', async function(req,res){
     return res.status(401).json(loginStatus);
   }
 })
-app.post('/answers/:id/upvote', async function(req, res){
+app.post('/answers/:id/upvote', function(req, res){
   var id = req.params.id
-  // logger.info("Entering '/answers/:id/upvote:  " + id);
   var user =  req.cookies['userSession']
   if(user){
+    // console.log("upvote answer id" + id);
       var upvote = req.body.upvote;
-      var value = 0;
-      Answer.findOne({id: id}).populate('user').exec().then(doc=>{
+      Answer.findOne({id: id}).populate('user').exec().then( async doc=>{
         if(doc == null)
-            return res.status(404).json({status: 'error', error: "Invalid answer id"});
+            return res.status(404).json({status: 'error', error: "Invalid Answer id"});
         else{
           var upvote_index = (doc.upvote).indexOf(user.username)
           var downvote_index =(doc.downvote).indexOf(user.username)
           var rep = doc.user.reputation
+          var change = false;
           if(upvote){ // want upvote
             if(upvote_index < 0){ // no upvote before,  upvote and increase rep
               (doc.upvote).push(user.username);
+              change = true;
               rep += 1;
               if(downvote_index > -1 ){ // downvote before, recall it only
                 (doc.downvote).splice(downvote_index, 1);
@@ -586,6 +612,7 @@ app.post('/answers/:id/upvote', async function(req, res){
             }else{ // repeat upvote, recall it and decrease rep
               (doc.upvote).splice(upvote_index, 1);
               if((doc.user.reputation) > 1){
+                change = true;
                   rep  -= 1;
               }
             }
@@ -593,6 +620,7 @@ app.post('/answers/:id/upvote', async function(req, res){
             if(downvote_index < 0){ // no downvote before, downvote and decrease rep
                 (doc.downvote).push(user.username);
                 if((doc.user.reputation) > 1){
+                  change = true;
                    rep  -= 1;
                 }
               if(upvote_index > -1 ){ // upvote before, recall it only
@@ -600,16 +628,25 @@ app.post('/answers/:id/upvote', async function(req, res){
               }
             }else{ // repeat downvote, recall it and increase rep
                (doc.downvote).splice(downvote_index, 1);
+               change = true;
                 rep += 1;
             }
           }
-          doc.save().catch(err=>{
-              logger.error("Save Question Error",err);
-          })
-          User.updateOne({_id: doc.user}, {$set: {reputation: rep}}).catch(err=>{
-            logger.error("Update user's rep error", err);
-          })
+        //  logger.info("Upvote value --answer " + upvote + " user: " + user.username + "id: "+ req.params.id +"rep: " + rep )
+        try{
+          if(change){
+             await Promise.all([
+                doc.save(),
+                User.updateOne({_id: doc.user}, {$set: {reputation: rep}})
+             ])
+          }else{
+            await doc.save()
+          }
           return res.json(OK);
+      }catch(err){
+        logger.error("upvote answer", err)
+        return res.status(400).json({status: 'error', error: err});
+      }
         }
         }).catch(err=>{
           return res.status(400).json({status: 'error', error: err});
@@ -619,28 +656,25 @@ app.post('/answers/:id/upvote', async function(req, res){
   }
 })
 /********************************** Media Parts************************************************/
-app.post('/addmedia', (req, res)=>{
+app.post('/addmedia', async(req, res)=>{
   var user = req.cookies['userSession']
-  // logger.info("Entering 'addmedia -- cookies: ", user);
-  if(user){
-      var form = new formidable.IncomingForm();
-      form.parse(req, function(err, fields, files) {
-        var content = files.content;
-          if(content == null || err ){
-              return res.status(400).json({status:'error', error: err});
-          }else{
-            mediaID = shortId.generate();
-            fs.readFile(content.path, async function(err, data){
-              var query = "insert into media.bigfile (id, filename, poster, flag, extension, content) values (?,?,?,?,?,?);";
-              await client.execute(query, [mediaID, content.name, user.username, 0, content.type, data], {prepare: true}).catch(err=>{
-                  logger.error("Add media failed: ", err); // tricky part
-            })
-               return res.json({status: 'OK', id: mediaID});
-          });
-        }
-      })
-    }else{
-       return res.status(401).json(loginStatus);
+    if(user){
+      try{
+        var uploadfile = req.files.content;
+        if(uploadfile == null)
+            return res.status(404).json({status:'error', error:"Empty file"});
+        logger.info('Add media: filename:  '+ uploadfile['name'] + 'mimeType: '+ uploadfile['mimetype']);
+        var mediaID = shortId.generate();
+        var query = "insert into media.bigfile (id, filename, poster, flag, extension, content) values (?,?,?,?,?,?);";
+        await client.execute(query, [mediaID, uploadfile.name, user.username, 0,uploadfile.mimetype, uploadfile.data], {prepare: true}).catch(err=>{
+                 logger.error("Add media failed: ", err); // tricky part
+         })
+        return res.json({status: 'OK', id: mediaID});
+      }catch(err){
+        return res.status(400).json({status:'error', error:err});
+      }
+  }else{
+        return res.status(401).json(loginStatus);
     }
 })
 app.get('/media/:id', (req, res)=>{
