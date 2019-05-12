@@ -34,14 +34,14 @@ app.set('views', './views');
 app.set('trust proxy');// for getting ip for couting views for questions
 /************************************************ DB ***********************************/
 mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://192.168.122.41:27017/firewall', { useNewUrlParser: true, useCreateIndex: true, useFindAndModify: false }).catch(err=> {
+mongoose.connect('mongodb://192.168.122.49:27017/firewall', { useNewUrlParser: true, useCreateIndex: true, useFindAndModify: false }).catch(err=> {
   if (err) { return logger.error("MongoDB connection Faield", err) }
 });
-const client = new cassandra.Client({ contactPoints: ['192.168.122.32'], localDataCenter: 'datacenter1', keySpace: 'media' });
+const client = new cassandra.Client({ contactPoints: ['192.168.122.49'], localDataCenter: 'datacenter1', keySpace: 'media' });
 client.connect(function(err, result) {
     if (err) {  return logger.error("cassandra connection Faield", err) }
 });
-const elasticClient = new elasticsearch.Client({ host: '192.168.122.41:9200'}, function(err, conn){
+const elasticClient = new elasticsearch.Client({ host: 'localhost:9200'}, function(err, conn){
   if(err){ return logger.error("elasticClient  connection Faield", err)}
 });
 elasticClient.ping({// Send a HEAD request to / and allow up to 1 second for it to complete.
