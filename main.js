@@ -34,10 +34,10 @@ app.set('views', './views');
 app.set('trust proxy');// for getting ip for couting views for questions
 /************************************************ DB ***********************************/
 mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://192.168.122.49:27017/firewall', { useNewUrlParser: true, useCreateIndex: true, useFindAndModify: false }).catch(err=> {
+mongoose.connect('mongodb://130.245.168.215:27017/firewall', { useNewUrlParser: true, useCreateIndex: true, useFindAndModify: false }).catch(err=> {
   if (err) { return logger.error("MongoDB connection Faield", err) }
 });
-const client = new cassandra.Client({ contactPoints: ['192.168.122.49'], localDataCenter: 'datacenter1', keySpace: 'media' });
+const client = new cassandra.Client({ contactPoints: ['192.168.122.57'], localDataCenter: 'datacenter1', keySpace: 'media' });
 client.connect(function(err, result) {
     if (err) {  return logger.error("cassandra connection Faield", err) }
 });
@@ -45,7 +45,7 @@ const elasticClient = new elasticsearch.Client({ host: 'localhost:9200'}, functi
   if(err){ return logger.error("elasticClient  connection Faield", err)}
 });
 elasticClient.ping({// Send a HEAD request to / and allow up to 1 second for it to complete.
-   requestTimeout: 3000 // ping usually has a 3000ms timeout
+   requestTimeout: 5000 // ping usually has a 3000ms timeout
 }, function (error) {if (error) logger.error('elasticsearch cluster is down!');
 });
 /*********************************** DB--- Schema ************************************/
