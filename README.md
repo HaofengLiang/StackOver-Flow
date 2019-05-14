@@ -18,6 +18,11 @@ curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 sudo apt-get install -y nodejs
 # install Nginx on Ubuntu
 sudo apt-get install nginx
+## For send big entity, need to modify nginx config file: /etc/nginx/sites-available/default
+sudo nano /etc/nginx/nginx.conf
+# Add these two lines
+client_max_body_size 200M;
+client_body_buffer_size 16k;
 ```
 ---
 
@@ -33,7 +38,7 @@ sudo apt-get install sendmail
 sudo sendmailconfig
 ```
 
-## Install elasticsearch, memcached, sendmail
+## Install elasticsearch,pm2
 ```sh
 #intall JDK for elasticsearch
 ## install it for using add-repository, /etc/apt/sources.list.d
@@ -52,59 +57,118 @@ sudo nano /etc/elasticsearch/elasticsearch.yml
 ## simple check elasticserach
 curl -X GET "localhost:9200"
 
-#install memcacehd on ubuntu
-sudo apt-get install memcached -y
-## config file
-sudo nano /etc/memcached.conf
-## check that Memcached is up and running,
-apt-get install libmemcached-tools
-memcstat --servers="127.0.0.1"
-
 # install pm2
 sudo apt-get update
 sudo npm install pm2 -g
 ```
 ---
 
+##  Install  Go, Monstache
+```sh
+# Install GO
+sudo apt-get install golang
+mkdir ~/go; echo "export GOPATH=$HOME/go" >> ~/.bashrc
+echo "export PATH=$PATH:$HOME/go/bin:/usr/local/go/bin" >> ~/.bashrc
+# restart bashrc
+source ~/.bashrc
+# install monstache
+echo "export PATH=$HOME/build/linux-amd64:$PATH" >> ~/.bashrc
+# restart bashrc
+source ~/.bashrc
+```
+---
 ## Basic commands
-```sh 
+```sh
 #  listening only for TCP connections
-netstat -tulpn 
+netstat -tulpn
+sudo netstat -ntlp | grep LISTEN
+## About Java
+sudo update-alternatives --config java
+sudo nano /etc/environment # --- JAVA_HOME="/usr/lib/jvm/java-8-oracle/jre/bin/"
+source /etc/environment
+# clean log memory
+sync; sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"
 ```
 ---
 ## Handle Errors
 ```sh
 # Sub-process /usr/bin/dpkg returned an error code (1)
 sudo dpkg --configure -a
-#  cqlsh localshot refuse
+#  if cqlsh localhost refuse
 export CQLSH_NO_BUNDLED=true
-
 ```
 ---
+## Configuration
+### Mongo DB
+1. Conf file:  /etc/mongod.conf
+2.  Allow remote access: bingIP: 0.0.0.0
+
+### Nginx reverse Proxy service
+1. Con file /etc/nginx/sites-available/default
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+### Elasticsearch
 ```sh
-# commands for mongoDb , /etc/mongod.conf
-service mongod  status
+#configure yml file and check if works: host_ip: 0.0.0.0
+sudo nano /etc/elasticsearch/elasticsearch.yml
+curl -X GET "localhost:9200"
+```
 
----
+## Monstache Configuration File
+1. workers = ["worker1","worker2","worker3"]
+    # connect to MongoDB using the following URL
+    mongo-url = "mongodb://localhost:27017"
+    elasticsearch-urls = ["http://localhost:9200"]
+    index-as-update = true
+    gzip = false
+    change-stream-namespaces = ['firewall.questions']
+    dropped-collections = true
+    dropped-databases = true
+    replay = false
+    stats = true
+    # resume processing from a timestamp saved in a previous run
+    resume = true
+    # override the name under which resume state is saved
+    resume-name = "default"
+    resume-write-unsafe = false
+    verbose = true
+    exit-after-direct-reads = false
+    [[mapping]]
+    namespace = "firewall.questions"
+    index = "questions"
+    type = "questions_type"
+    [[mapping]]
 
-sudo netstat -ntlp | grep LISTEN
-###
+    [[script]]
+    namespace = "firewall.questions"
+    script = """
+    module.exports = function(doc){
+    if(doc.user){
+            doc.user  = findId(doc.user, {
+            database: "firewall",
+            collection: "user",
 
-# Nginx + Elasticsearch + Nodejs
-location / {
-    proxy_pass http://localhost:3000;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection 'upgrade';
-    proxy_set_header Host $host;
-    proxy_cache_bypass $http_upgrade;
-}
-
-location /elasticsearch {
-    proxy_pass http://localhost:9200;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection 'upgrade';
-    proxy_set_header Host $host;
-    proxy_cache_bypass $http_upgrade;
-}
+            "username": 1,
+                "reputation": 1
+            }
+            });
+        }
+        doc.answer_count = doc.answers.length;
+        doc.view_count = doc.viewers.length;
+        doc.score = doc.upvote.length - doc.downvote.length;
+        return _.omit(doc,"viewers", "answers", "upvote", "downvote");
+    }
+    """
+2. sudo nano mongo-elastic.toml
+    monstache -f mongo-elastic.toml -worker worker1 & monstache -f mongo-elastic.toml -worker worker2 &monstache -f mongo-elastic.toml -worker worker3
+3.  for Bulk Data -- Need to modify elasticsearch.yml file
+    http.compression: true
+    thread_pool:
+        bulk:
+        queue_size: 500 
