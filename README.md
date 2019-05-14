@@ -119,10 +119,12 @@ export CQLSH_NO_BUNDLED=true
 sudo nano /etc/elasticsearch/elasticsearch.yml
 curl -X GET "localhost:9200"
 ```
-
+```toml
+ workers = ["worker1","worker2","worker3"]
+```
 ## Monstache Configuration File
 1. workers = ["worker1","worker2","worker3"]
-    # connect to MongoDB using the following URL
+INTRODUCTION TO THE THEORY OF COMPUTATION
     mongo-url = "mongodb://localhost:27017"
     elasticsearch-urls = ["http://localhost:9200"]
     index-as-update = true
