@@ -119,58 +119,60 @@ export CQLSH_NO_BUNDLED=true
 sudo nano /etc/elasticsearch/elasticsearch.yml
 curl -X GET "localhost:9200"
 ```
+### Monstache Config File
+#### Commands to run config file with multi-workers
+monstache -f mongo-elastic.toml -worker worker1 & monstache -f mongo-elastic.toml -worker worker2 &monstache -f mongo-elastic.toml -worker worker3
+#### Toml File 
 ```toml
- workers = ["worker1","worker2","worker3"]
-```
-## Monstache Configuration File
-1. workers = ["worker1","worker2","worker3"]
-INTRODUCTION TO THE THEORY OF COMPUTATION
-    mongo-url = "mongodb://localhost:27017"
-    elasticsearch-urls = ["http://localhost:9200"]
-    index-as-update = true
-    gzip = false
-    change-stream-namespaces = ['firewall.questions']
-    dropped-collections = true
-    dropped-databases = true
-    replay = false
-    stats = true
-    # resume processing from a timestamp saved in a previous run
-    resume = true
-    # override the name under which resume state is saved
-    resume-name = "default"
-    resume-write-unsafe = false
-    verbose = true
-    exit-after-direct-reads = false
-    [[mapping]]
-    namespace = "firewall.questions"
-    index = "questions"
-    type = "questions_type"
-    [[mapping]]
+workers = ["worker1","worker2","worker3"]
+mongo-url = "mongodb://localhost:27017"
+elasticsearch-urls = ["http://localhost:9200"]
+prune-invalid-json=true
+index-as-update = true
+change-stream-namespaces = ['firewall.questions']
+dropped-collections = true
+dropped-databases = true
+replay = false
+resume = true
+resume-name = "default"
+resume-write-unsafe = false
+#verbose = true
+exit-after-direct-reads = false
 
-    [[script]]
-    namespace = "firewall.questions"
-    script = """
-    module.exports = function(doc){
-    if(doc.user){
-            doc.user  = findId(doc.user, {
-            database: "firewall",
-            collection: "user",
+[[mapping]]
+namespace = "firewall.questions"
+index = "questions"
+type = "questions_type"
 
-            "username": 1,
-                "reputation": 1
-            }
-            });
+[[script]]
+namespace = "firewall.questions"
+script = """
+module.exports = function(doc){
+   if(doc.user){
+      doc.user = findId(doc.user, {
+        database: "firewall",
+        collection: "users",
+        select:{
+           _id: 0,
+           username:1,
+           reputation: 1
         }
-        doc.answer_count = doc.answers.length;
-        doc.view_count = doc.viewers.length;
-        doc.score = doc.upvote.length - doc.downvote.length;
-        return _.omit(doc,"viewers", "answers", "upvote", "downvote");
+     })
     }
-    """
-2. sudo nano mongo-elastic.toml
-    monstache -f mongo-elastic.toml -worker worker1 & monstache -f mongo-elastic.toml -worker worker2 &monstache -f mongo-elastic.toml -worker worker3
-3.  for Bulk Data -- Need to modify elasticsearch.yml file
-    http.compression: true
+    if(doc.accepted_answer_id == null){
+        doc.accepted_answer_id = [];
+}
+    doc.score = (doc.upvote).length - (doc.downvote).length;
+    doc.view_count = (doc.viewers).length;
+    doc.answer_count = (doc.answers).length;
+    return _.omit(doc,"viewers", "answers", "upvote", "downvote");
+}
+"""    
+```
+#### for Bulk Data -- Need to modify elasticsearch.yml file
+```yml
+http.compression: true
     thread_pool:
         bulk:
         queue_size: 500 
+```
